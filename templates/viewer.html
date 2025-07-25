@@ -500,6 +500,17 @@
                         </button>
                     </li>
                     
+                    <!-- Security Policies -->
+                    <li>
+                        <button @click="activeSection = 'security-policies'; loadSecurityPolicies()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'security-policies' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-shield-alt w-5"></i>
+                            Security Policies
+                            <span x-show="stats.securityPolicies !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.securityPolicies"></span>
+                        </button>
+                    </li>
+                    
                     <!-- Templates -->
                     <li>
                         <button @click="activeSection = 'templates'; loadTemplates()"
@@ -705,6 +716,38 @@
                         </template>
                     </div>
                 </div>
+                
+                <!-- Security Policies Section -->
+                <div x-show="activeSection === 'security-policies'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Security Policies</h2>
+                        <p class="text-gray-600 mt-1">Security rules configured across device groups</p>
+                    </div>
+
+                    <!-- Security Policies DataTable -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
+                        <table id="securityPoliciesTable" class="display w-full">
+                            <thead>
+                                <tr>
+                                    <th>Rule Name</th>
+                                    <th>From Zone</th>
+                                    <th>To Zone</th>
+                                    <th>Source</th>
+                                    <th>Destination</th>
+                                    <th>Application</th>
+                                    <th>Service</th>
+                                    <th>Action</th>
+                                    <th>Profile</th>
+                                    <th>Device Group</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -753,7 +796,8 @@
                     services: null,
                     serviceGroups: null,
                     deviceGroups: null,
-                    templates: null
+                    templates: null,
+                    securityPolicies: null
                 },
                 
                 // Methods
@@ -1226,6 +1270,130 @@
                     });
                 },
                 
+                initSecurityPoliciesDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#securityPoliciesTable')) {
+                        $('#securityPoliciesTable').DataTable().destroy();
+                    }
+                    
+                    // Transform data for DataTable
+                    const tableData = this.currentData.map(rule => {
+                        const fromZones = Array.isArray(rule.from_) ? rule.from_.join(', ') : rule.from_ || 'any';
+                        const toZones = Array.isArray(rule.to) ? rule.to.join(', ') : rule.to || 'any';
+                        const sources = Array.isArray(rule.source) ? rule.source.join(', ') : rule.source || 'any';
+                        const destinations = Array.isArray(rule.destination) ? rule.destination.join(', ') : rule.destination || 'any';
+                        const applications = Array.isArray(rule.application) ? rule.application.join(', ') : rule.application || 'any';
+                        const services = Array.isArray(rule.service) ? rule.service.join(', ') : rule.service || 'any';
+                        
+                        const actionBadge = rule.action === 'allow' ? 
+                            '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Allow</span>' :
+                            rule.action === 'deny' ? 
+                            '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Deny</span>' :
+                            '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">' + rule.action + '</span>';
+                        
+                        const profileInfo = rule.profile_setting ? 'Enabled' : 'None';
+                        
+                        const statusBadge = rule.disabled ? 
+                            '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Disabled</span>' :
+                            '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Enabled</span>';
+                        
+                        const typeBadge = rule.parent_device_group ? 
+                            '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">Pre/Post</span>' :
+                            '<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Shared</span>';
+                        
+                        return [
+                            rule.name,
+                            fromZones,
+                            toZones,
+                            sources,
+                            destinations,
+                            applications,
+                            services,
+                            actionBadge,
+                            profileInfo,
+                            rule.device_group || '-',
+                            typeBadge,
+                            statusBadge,
+                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(rule).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-eye"></i> View
+                            </button>`
+                        ];
+                    });
+                    
+                    // Initialize DataTable with advanced features
+                    $('#securityPoliciesTable').DataTable({
+                        data: tableData,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Blfrtip',
+                        scrollX: true,
+                        colReorder: true,
+                        autoWidth: false,
+                        buttons: [
+                            {
+                                extend: 'colvis',
+                                text: '<i class="fas fa-columns"></i> Columns',
+                                className: 'dt-button-colvis',
+                                columns: ':not(.noVis)'
+                            },
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy'
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv'
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel'
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="fas fa-file-pdf"></i> PDF',
+                                className: 'dt-button-pdf',
+                                orientation: 'landscape',
+                                pageSize: 'LEGAL'
+                            },
+                            {
+                                extend: 'print',
+                                text: '<i class="fas fa-print"></i> Print',
+                                className: 'dt-button-print'
+                            }
+                        ],
+                        language: {
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search security policies...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ security policies",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No security policies found"
+                        },
+                        columnDefs: [
+                            { targets: [0], width: '15%' }, // Rule Name
+                            { targets: [1, 2], width: '8%' }, // Zones
+                            { targets: [3, 4], width: '12%' }, // Source/Dest
+                            { targets: [5, 6], width: '10%' }, // App/Service
+                            { targets: [7], width: '6%' }, // Action
+                            { targets: [8], width: '6%' }, // Profile
+                            { targets: [9], width: '10%' }, // Device Group
+                            { targets: [10, 11], width: '6%' }, // Type/Status
+                            { targets: [12], width: '5%' } // Actions
+                        ]
+                    });
+                    
+                    // Make component available globally for onclick handlers
+                    window.configViewer = this;
+                },
+                
                 async loadAddressGroups() {
                     this.loading = true;
                     try {
@@ -1374,6 +1542,45 @@
                         this.stats.templates = this.currentData.length;
                     } catch (error) {
                         console.error('Failed to load templates:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadSecurityPolicies() {
+                    this.loading = true;
+                    try {
+                        // Fetch device groups first
+                        const dgResp = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`);
+                        const deviceGroups = await dgResp.json();
+                        
+                        let allRules = [];
+                        
+                        // Fetch security rules from each device group
+                        const rulePromises = deviceGroups.map(dg => 
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/rules`)
+                                .then(resp => resp.json())
+                                .then(rules => rules.map(rule => ({
+                                    ...rule,
+                                    device_group: dg.name,
+                                    rule_type: rule.parent_device_group ? 'Device Group' : 'Shared'
+                                })))
+                                .catch(() => [])
+                        );
+                        
+                        const ruleResults = await Promise.all(rulePromises);
+                        ruleResults.forEach(rules => {
+                            allRules = allRules.concat(rules);
+                        });
+                        
+                        this.currentData = allRules;
+                        this.filteredData = [...this.currentData];
+                        this.stats.securityPolicies = this.currentData.length;
+                        
+                        // Initialize DataTable
+                        this.initSecurityPoliciesDataTable();
+                    } catch (error) {
+                        console.error('Failed to load security policies:', error);
                     } finally {
                         this.loading = false;
                     }
