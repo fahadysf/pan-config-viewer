@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException, Query, Path
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, HTTPException, Query, Path, Request
+from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from typing import List, Optional, Dict
 import os
 import glob
@@ -96,6 +98,9 @@ CONFIG_FILES_PATH = os.environ.get("CONFIG_FILES_PATH", "/config-files")
 parsers: Dict[str, PanoramaXMLParser] = {}
 available_configs: List[str] = []
 
+# Setup templates
+templates = Jinja2Templates(directory="templates")
+
 @app.on_event("startup")
 async def startup_event():
     """Scan for XML files on startup"""
@@ -140,6 +145,11 @@ def get_parser(config_name: str) -> PanoramaXMLParser:
 async def root():
     """Redirect to API documentation"""
     return RedirectResponse(url="/docs")
+
+@app.get("/viewer", response_class=HTMLResponse, include_in_schema=False)
+async def viewer(request: Request):
+    """Serve the configuration viewer frontend"""
+    return templates.TemplateResponse("viewer.html", {"request": request})
 
 # Configuration Management Endpoints
 @app.get("/api/v1/configs",
@@ -323,6 +333,103 @@ async def get_service_groups(
     # Apply filters
     if name:
         groups = [g for g in groups if name.lower() in g.name.lower()]
+    
+    return groups
+
+# Shared Location Endpoints
+@app.get("/api/v1/configs/{config_name}/shared/addresses",
+         response_model=List[AddressObject],
+         tags=["Address Objects"],
+         summary="Get shared address objects",
+         description="Retrieve all address objects defined in the shared location")
+async def get_shared_addresses(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    name: Optional[str] = Query(None, description="Filter by address name (partial match)")
+):
+    """Get all shared address objects"""
+    parser = get_parser(config_name)
+    addresses = parser.get_shared_addresses()
+    
+    if name:
+        addresses = [a for a in addresses if name.lower() in a.name.lower()]
+    
+    # Ensure all have location set to shared
+    for addr in addresses:
+        addr.parent_device_group = None
+        addr.parent_template = None
+        addr.parent_vsys = None
+    
+    return addresses
+
+@app.get("/api/v1/configs/{config_name}/shared/address-groups",
+         response_model=List[AddressGroup],
+         tags=["Address Objects"],
+         summary="Get shared address groups",
+         description="Retrieve all address groups defined in the shared location")
+async def get_shared_address_groups_endpoint(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+):
+    """Get all shared address groups"""
+    parser = get_parser(config_name)
+    groups = parser.get_shared_address_groups()
+    
+    if name:
+        groups = [g for g in groups if name.lower() in g.name.lower()]
+    
+    # Ensure all have location set to shared
+    for group in groups:
+        group.parent_device_group = None
+        group.parent_template = None
+        group.parent_vsys = None
+    
+    return groups
+
+@app.get("/api/v1/configs/{config_name}/shared/services",
+         response_model=List[ServiceObject],
+         tags=["Service Objects"],
+         summary="Get shared service objects",
+         description="Retrieve all service objects defined in the shared location")
+async def get_shared_services(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    name: Optional[str] = Query(None, description="Filter by service name (partial match)")
+):
+    """Get all shared service objects"""
+    parser = get_parser(config_name)
+    services = parser.get_shared_services()
+    
+    if name:
+        services = [s for s in services if name.lower() in s.name.lower()]
+    
+    # Ensure all have location set to shared
+    for svc in services:
+        svc.parent_device_group = None
+        svc.parent_template = None
+        svc.parent_vsys = None
+    
+    return services
+
+@app.get("/api/v1/configs/{config_name}/shared/service-groups",
+         response_model=List[ServiceGroup],
+         tags=["Service Objects"],
+         summary="Get shared service groups",
+         description="Retrieve all service groups defined in the shared location")
+async def get_shared_service_groups_endpoint(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+):
+    """Get all shared service groups"""
+    parser = get_parser(config_name)
+    groups = parser.get_shared_service_groups()
+    
+    if name:
+        groups = [g for g in groups if name.lower() in g.name.lower()]
+    
+    # Ensure all have location set to shared
+    for group in groups:
+        group.parent_device_group = None
+        group.parent_template = None
+        group.parent_vsys = None
     
     return groups
 

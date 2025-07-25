@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAN-OS Configuration Viewer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom styles -->
+    <style>
+        [x-cloak] { display: none !important; }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="configViewer()" x-init="init()">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-network-wired mr-2 text-blue-600"></i>
+                        PAN-OS Configuration Viewer
+                    </h1>
+                </div>
+                
+                <!-- Config Selector -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative" x-cloak>
+                        <label class="text-sm font-medium text-gray-700 mr-2">Configuration:</label>
+                        <select 
+                            x-model="selectedConfig" 
+                            @change="loadConfiguration()"
+                            class="block w-64 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            :disabled="loading || configs.length === 0"
+                        >
+                            <option value="">Select a configuration...</option>
+                            <template x-for="config in configs" :key="config">
+                                <option :value="config" x-text="config"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <button @click="refreshConfigs()" 
+                            class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                            :disabled="loading">
+                        <i class="fas fa-sync-alt" :class="loading ? 'animate-spin' : ''"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="flex h-screen pt-16" style="height: calc(100vh - 4rem);">
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 bg-white shadow-lg overflow-y-auto scrollbar-thin">
+            <div class="p-4">
+                <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">
+                    Configuration Objects
+                </h2>
+                
+                <ul class="space-y-1">
+                    <!-- Address Objects -->
+                    <li>
+                        <button @click="activeSection = 'addresses'; loadAddresses()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'addresses' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-map-marker-alt w-5"></i>
+                            Address Objects
+                            <span x-show="stats.addresses !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.addresses"></span>
+                        </button>
+                    </li>
+                    
+                    <!-- Address Groups -->
+                    <li>
+                        <button @click="activeSection = 'address-groups'; loadAddressGroups()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'address-groups' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-object-group w-5"></i>
+                            Address Groups
+                            <span x-show="stats.addressGroups !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.addressGroups"></span>
+                        </button>
+                    </li>
+                    
+                    <!-- Services -->
+                    <li>
+                        <button @click="activeSection = 'services'; loadServices()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'services' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-server w-5"></i>
+                            Service Objects
+                            <span x-show="stats.services !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.services"></span>
+                        </button>
+                    </li>
+                    
+                    <!-- Service Groups -->
+                    <li>
+                        <button @click="activeSection = 'service-groups'; loadServiceGroups()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'service-groups' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-layer-group w-5"></i>
+                            Service Groups
+                            <span x-show="stats.serviceGroups !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.serviceGroups"></span>
+                        </button>
+                    </li>
+                    
+                    <!-- Device Groups -->
+                    <li>
+                        <button @click="activeSection = 'device-groups'; loadDeviceGroups()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'device-groups' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-sitemap w-5"></i>
+                            Device Groups
+                            <span x-show="stats.deviceGroups !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.deviceGroups"></span>
+                        </button>
+                    </li>
+                    
+                    <!-- Templates -->
+                    <li>
+                        <button @click="activeSection = 'templates'; loadTemplates()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection === 'templates' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-file-alt w-5"></i>
+                            Templates
+                            <span x-show="stats.templates !== null" class="float-right text-xs bg-gray-200 px-2 py-1 rounded-full" x-text="stats.templates"></span>
+                        </button>
+                    </li>
+                    
+                    <!-- Security Profiles -->
+                    <li>
+                        <button @click="toggleSecurityProfiles()"
+                                class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                :class="activeSection.startsWith('security-') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-shield-alt w-5"></i>
+                            Security Profiles
+                            <i class="fas fa-chevron-down float-right transition-transform" :class="showSecurityProfiles ? 'rotate-180' : ''"></i>
+                        </button>
+                        
+                        <!-- Security Profiles Submenu -->
+                        <ul x-show="showSecurityProfiles" x-transition class="ml-4 mt-1 space-y-1">
+                            <li>
+                                <button @click="activeSection = 'security-vulnerability'; loadSecurityProfiles('vulnerability')"
+                                        class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                        :class="activeSection === 'security-vulnerability' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
+                                    <i class="fas fa-bug w-4"></i>
+                                    Vulnerability
+                                </button>
+                            </li>
+                            <li>
+                                <button @click="activeSection = 'security-url'; loadSecurityProfiles('url-filtering')"
+                                        class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors"
+                                        :class="activeSection === 'security-url' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
+                                    <i class="fas fa-link w-4"></i>
+                                    URL Filtering
+                                </button>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50">
+            <!-- Loading State -->
+            <div x-show="loading" class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                    <p class="text-gray-600">Loading...</p>
+                </div>
+            </div>
+
+            <!-- No Config Selected -->
+            <div x-show="!loading && !selectedConfig" class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-xl text-gray-600 mb-2">No Configuration Selected</p>
+                    <p class="text-gray-500">Please select a configuration from the dropdown above</p>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div x-show="!loading && selectedConfig && activeSection" x-cloak class="p-6">
+                <!-- Addresses Section -->
+                <div x-show="activeSection === 'addresses'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Address Objects</h2>
+                        <p class="text-gray-600 mt-1">IP addresses, FQDNs, and ranges defined in the configuration</p>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="mb-4 flex gap-4">
+                        <input type="text" 
+                               x-model="searchTerm" 
+                               @input="filterData()"
+                               placeholder="Search addresses..."
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        
+                        <select x-model="filterLocation" @change="filterData()"
+                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Locations</option>
+                            <option value="shared">Shared</option>
+                            <option value="device-group">Device Group</option>
+                            <option value="template">Template</option>
+                        </select>
+                    </div>
+
+                    <!-- Data Table -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Name
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('type')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Type
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'type'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'type' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'type' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('value')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Value
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'value'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'value' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'value' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Location
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Description
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="item in filteredData" :key="item.name">
+                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="item['ip-netmask']" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">IP/Netmask</span>
+                                            <span x-show="item.fqdn" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">FQDN</span>
+                                            <span x-show="item['ip-range']" class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">IP Range</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-text="item['ip-netmask'] || item.fqdn || item['ip-range'] || '-'"></span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
+                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
+                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        
+                        <!-- No Results -->
+                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
+                            No addresses found
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sections will be similar -->
+                <div x-show="activeSection === 'address-groups'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Address Groups</h2>
+                        <p class="text-gray-600 mt-1">Static and dynamic address groups</p>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="mb-4 flex gap-4">
+                        <input type="text" 
+                               x-model="searchTerm" 
+                               @input="filterData()"
+                               placeholder="Search address groups..."
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        
+                        <select x-model="filterLocation" @change="filterData()"
+                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Locations</option>
+                            <option value="shared">Shared</option>
+                            <option value="device-group">Device Group</option>
+                            <option value="template">Template</option>
+                        </select>
+                    </div>
+
+                    <!-- Address Groups Table -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Name
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('type')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Type
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'type'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'type' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'type' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('members')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Members
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'members'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'members' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'members' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Location
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Description
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="item in filteredData" :key="item.name">
+                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="item.static && item.static.length > 0" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Static</span>
+                                            <span x-show="item.dynamic" class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">Dynamic</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <div class="max-w-md">
+                                                <span x-show="item.static && item.static.length > 0" class="inline-flex flex-wrap gap-1">
+                                                    <template x-for="(member, index) in item.static.slice(0, 3)" :key="member">
+                                                        <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md" x-text="member"></span>
+                                                    </template>
+                                                    <span x-show="item.static.length > 3" class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">
+                                                        +<span x-text="item.static.length - 3"></span> more
+                                                    </span>
+                                                </span>
+                                                <span x-show="item.dynamic" class="text-xs text-gray-600" x-text="'Filter: ' + item.dynamic.filter"></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
+                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
+                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        
+                        <!-- No Results -->
+                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
+                            No address groups found
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="activeSection === 'services'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Service Objects</h2>
+                        <p class="text-gray-600 mt-1">TCP/UDP service definitions</p>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="mb-4 flex gap-4">
+                        <input type="text" 
+                               x-model="searchTerm" 
+                               @input="filterData()"
+                               placeholder="Search services..."
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        
+                        <select x-model="filterLocation" @change="filterData()"
+                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Locations</option>
+                            <option value="shared">Shared</option>
+                            <option value="device-group">Device Group</option>
+                            <option value="template">Template</option>
+                        </select>
+                    </div>
+
+                    <!-- Service Table -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Name
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('protocol')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Protocol
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'protocol'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'protocol' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'protocol' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('port')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Port
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'port'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'port' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'port' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Location
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Description
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="item in filteredData" :key="item.name">
+                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="item.protocol && item.protocol.tcp" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">TCP</span>
+                                            <span x-show="item.protocol && item.protocol.udp" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">UDP</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-text="getServicePort(item)"></span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
+                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
+                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        
+                        <!-- No Results -->
+                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
+                            No services found
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Groups Section -->
+                <div x-show="activeSection === 'service-groups'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Service Groups</h2>
+                        <p class="text-gray-600 mt-1">Collections of service objects</p>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="mb-4 flex gap-4">
+                        <input type="text" 
+                               x-model="searchTerm" 
+                               @input="filterData()"
+                               placeholder="Search service groups..."
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        
+                        <select x-model="filterLocation" @change="filterData()"
+                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Locations</option>
+                            <option value="shared">Shared</option>
+                            <option value="device-group">Device Group</option>
+                            <option value="template">Template</option>
+                        </select>
+                    </div>
+
+                    <!-- Service Groups Table -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Name
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('members')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Members
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'members'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'members' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'members' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Location
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                        <div class="flex items-center">
+                                            Description
+                                            <span class="ml-2">
+                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
+                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
+                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
+                                            </span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="item in filteredData" :key="item.name">
+                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <div class="max-w-md">
+                                                <span x-show="item.members && item.members.length > 0" class="inline-flex flex-wrap gap-1">
+                                                    <template x-for="(member, index) in item.members.slice(0, 4)" :key="member">
+                                                        <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md" x-text="member"></span>
+                                                    </template>
+                                                    <span x-show="item.members.length > 4" class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">
+                                                        +<span x-text="item.members.length - 4"></span> more
+                                                    </span>
+                                                </span>
+                                                <span x-show="!item.members || item.members.length === 0" class="text-gray-400">No members</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
+                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
+                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        
+                        <!-- No Results -->
+                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
+                            No service groups found
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="activeSection === 'device-groups'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Device Groups</h2>
+                        <p class="text-gray-600 mt-1">Device group hierarchy and configurations</p>
+                    </div>
+                    
+                    <!-- Device Groups Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="dg in currentData" :key="dg.name">
+                            <div class="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer" @click="showDeviceGroupDetail(dg)">
+                                <h3 class="font-semibold text-lg text-gray-900" x-text="dg.name"></h3>
+                                <p class="text-sm text-gray-600 mt-1" x-text="dg.description || 'No description'"></p>
+                                
+                                <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-500">Addresses:</span>
+                                        <span class="font-medium" x-text="dg.address_count || 0"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-500">Services:</span>
+                                        <span class="font-medium" x-text="dg.service_count || 0"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-500">Pre Rules:</span>
+                                        <span class="font-medium" x-text="dg.pre_security_rules_count || 0"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-500">Post Rules:</span>
+                                        <span class="font-medium" x-text="dg.post_security_rules_count || 0"></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <span class="text-xs text-gray-500">Parent: </span>
+                                    <span class="text-xs font-medium text-gray-700" x-text="dg.parent_dg || 'None'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Detail Modal -->
+    <div x-show="showDetailModal" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         @click.away="showDetailModal = false">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            
+            <div class="relative bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900" x-text="detailItem.name"></h3>
+                    <button @click="showDetailModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="px-6 py-4 overflow-y-auto max-h-[60vh]">
+                    <pre class="bg-gray-50 p-4 rounded-md text-sm overflow-x-auto" x-text="JSON.stringify(detailItem, null, 2)"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function configViewer() {
+            return {
+                // State
+                loading: false,
+                configs: [],
+                selectedConfig: '',
+                activeSection: '',
+                showSecurityProfiles: false,
+                currentData: [],
+                filteredData: [],
+                searchTerm: '',
+                filterLocation: '',
+                showDetailModal: false,
+                detailItem: {},
+                
+                // Sorting state
+                sortColumn: '',
+                sortDirection: 'asc', // 'asc' or 'desc'
+                
+                // Statistics
+                stats: {
+                    addresses: null,
+                    addressGroups: null,
+                    services: null,
+                    serviceGroups: null,
+                    deviceGroups: null,
+                    templates: null
+                },
+                
+                // Methods
+                async init() {
+                    await this.refreshConfigs();
+                },
+                
+                async refreshConfigs() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/api/v1/configs');
+                        const data = await response.json();
+                        this.configs = data.configs;
+                        
+                        // Auto-select first config if only one available
+                        if (this.configs.length === 1) {
+                            this.selectedConfig = this.configs[0];
+                            await this.loadConfiguration();
+                        }
+                    } catch (error) {
+                        console.error('Failed to load configs:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadConfiguration() {
+                    if (!this.selectedConfig) return;
+                    
+                    // Reset state
+                    this.activeSection = '';
+                    this.currentData = [];
+                    this.filteredData = [];
+                    this.stats = {
+                        addresses: null,
+                        addressGroups: null,
+                        services: null,
+                        serviceGroups: null,
+                        deviceGroups: null,
+                        templates: null
+                    };
+                    
+                    // Load initial stats
+                    await this.loadStats();
+                },
+                
+                async loadStats() {
+                    // Load counts for sidebar badges
+                    try {
+                        // Addresses
+                        const addrResp = await fetch(`/api/v1/configs/${this.selectedConfig}/addresses`);
+                        const addresses = await addrResp.json();
+                        this.stats.addresses = addresses.length;
+                        
+                        // Device Groups
+                        const dgResp = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`);
+                        const deviceGroups = await dgResp.json();
+                        this.stats.deviceGroups = deviceGroups.length;
+                        
+                        // Add more stats loading as needed
+                    } catch (error) {
+                        console.error('Failed to load stats:', error);
+                    }
+                },
+                
+                async loadAddresses() {
+                    this.loading = true;
+                    try {
+                        // Fetch from all sources in parallel
+                        const [sharedResp, deviceGroupsResp] = await Promise.all([
+                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/addresses`),
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
+                        ]);
+                        
+                        const sharedAddresses = await sharedResp.json();
+                        const deviceGroups = await deviceGroupsResp.json();
+                        
+                        // Start with shared addresses
+                        let allAddresses = [...sharedAddresses];
+                        
+                        // Fetch addresses from each device group
+                        const dgAddressPromises = deviceGroups.map(dg => 
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/addresses`)
+                                .then(resp => resp.json())
+                                .catch(() => [])
+                        );
+                        
+                        const dgAddressResults = await Promise.all(dgAddressPromises);
+                        
+                        // Combine all addresses
+                        dgAddressResults.forEach(addresses => {
+                            allAddresses = allAddresses.concat(addresses);
+                        });
+                        
+                        // Remove duplicates based on name
+                        const uniqueAddresses = Array.from(
+                            new Map(allAddresses.map(addr => [addr.name, addr])).values()
+                        );
+                        
+                        this.currentData = uniqueAddresses;
+                        this.filteredData = [...this.currentData];
+                        this.stats.addresses = this.currentData.length;
+                        this.filterData();
+                    } catch (error) {
+                        console.error('Failed to load addresses:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadAddressGroups() {
+                    this.loading = true;
+                    try {
+                        // Fetch from all sources
+                        const [sharedResp, deviceGroupsResp] = await Promise.all([
+                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/address-groups`),
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
+                        ]);
+                        
+                        const sharedGroups = await sharedResp.json();
+                        const deviceGroups = await deviceGroupsResp.json();
+                        
+                        let allGroups = [...sharedGroups];
+                        
+                        // Fetch from each device group
+                        const dgGroupPromises = deviceGroups.map(dg => 
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/address-groups`)
+                                .then(resp => resp.json())
+                                .catch(() => [])
+                        );
+                        
+                        const dgGroupResults = await Promise.all(dgGroupPromises);
+                        dgGroupResults.forEach(groups => {
+                            allGroups = allGroups.concat(groups);
+                        });
+                        
+                        // Remove duplicates
+                        const uniqueGroups = Array.from(
+                            new Map(allGroups.map(group => [group.name, group])).values()
+                        );
+                        
+                        this.currentData = uniqueGroups;
+                        this.filteredData = [...this.currentData];
+                        this.stats.addressGroups = this.currentData.length;
+                    } catch (error) {
+                        console.error('Failed to load address groups:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadServices() {
+                    this.loading = true;
+                    try {
+                        // Fetch from all sources
+                        const [sharedResp, deviceGroupsResp] = await Promise.all([
+                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/services`),
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
+                        ]);
+                        
+                        const sharedServices = await sharedResp.json();
+                        const deviceGroups = await deviceGroupsResp.json();
+                        
+                        let allServices = [...sharedServices];
+                        
+                        // Fetch from each device group
+                        const dgServicePromises = deviceGroups.map(dg => 
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/services`)
+                                .then(resp => resp.json())
+                                .catch(() => [])
+                        );
+                        
+                        const dgServiceResults = await Promise.all(dgServicePromises);
+                        dgServiceResults.forEach(services => {
+                            allServices = allServices.concat(services);
+                        });
+                        
+                        // Remove duplicates
+                        const uniqueServices = Array.from(
+                            new Map(allServices.map(svc => [svc.name, svc])).values()
+                        );
+                        
+                        this.currentData = uniqueServices;
+                        this.filteredData = [...this.currentData];
+                        this.stats.services = this.currentData.length;
+                    } catch (error) {
+                        console.error('Failed to load services:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadServiceGroups() {
+                    this.loading = true;
+                    try {
+                        // Fetch from all sources
+                        const [sharedResp, deviceGroupsResp] = await Promise.all([
+                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/service-groups`),
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
+                        ]);
+                        
+                        const sharedGroups = await sharedResp.json();
+                        const deviceGroups = await deviceGroupsResp.json();
+                        
+                        let allGroups = [...sharedGroups];
+                        
+                        // Fetch from each device group
+                        const dgGroupPromises = deviceGroups.map(dg => 
+                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/service-groups`)
+                                .then(resp => resp.json())
+                                .catch(() => [])
+                        );
+                        
+                        const dgGroupResults = await Promise.all(dgGroupPromises);
+                        dgGroupResults.forEach(groups => {
+                            allGroups = allGroups.concat(groups);
+                        });
+                        
+                        // Remove duplicates
+                        const uniqueGroups = Array.from(
+                            new Map(allGroups.map(group => [group.name, group])).values()
+                        );
+                        
+                        this.currentData = uniqueGroups;
+                        this.filteredData = [...this.currentData];
+                        this.stats.serviceGroups = this.currentData.length;
+                    } catch (error) {
+                        console.error('Failed to load service groups:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadDeviceGroups() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`);
+                        this.currentData = await response.json();
+                        this.filteredData = [...this.currentData];
+                    } catch (error) {
+                        console.error('Failed to load device groups:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadTemplates() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`/api/v1/configs/${this.selectedConfig}/templates`);
+                        this.currentData = await response.json();
+                        this.filteredData = [...this.currentData];
+                        this.stats.templates = this.currentData.length;
+                    } catch (error) {
+                        console.error('Failed to load templates:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadSecurityProfiles(type) {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`/api/v1/configs/${this.selectedConfig}/security-profiles/${type}`);
+                        this.currentData = await response.json();
+                        this.filteredData = [...this.currentData];
+                    } catch (error) {
+                        console.error('Failed to load security profiles:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                toggleSecurityProfiles() {
+                    this.showSecurityProfiles = !this.showSecurityProfiles;
+                },
+                
+                filterData() {
+                    // First filter the data
+                    let filtered = this.currentData.filter(item => {
+                        // Search filter
+                        if (this.searchTerm && !item.name.toLowerCase().includes(this.searchTerm.toLowerCase())) {
+                            return false;
+                        }
+                        
+                        // Location filter
+                        if (this.filterLocation) {
+                            if (this.filterLocation === 'shared' && (item['parent-device-group'] || item['parent-template'])) {
+                                return false;
+                            }
+                            if (this.filterLocation === 'device-group' && !item['parent-device-group']) {
+                                return false;
+                            }
+                            if (this.filterLocation === 'template' && !item['parent-template']) {
+                                return false;
+                            }
+                        }
+                        
+                        return true;
+                    });
+                    
+                    // Then apply sorting
+                    if (this.sortColumn) {
+                        filtered = this.sortData(filtered);
+                    }
+                    
+                    this.filteredData = filtered;
+                },
+                
+                sortBy(column) {
+                    if (this.sortColumn === column) {
+                        // Toggle direction if clicking same column
+                        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        // New column, default to ascending
+                        this.sortColumn = column;
+                        this.sortDirection = 'asc';
+                    }
+                    this.filterData();
+                },
+                
+                sortData(data) {
+                    return [...data].sort((a, b) => {
+                        let aVal, bVal;
+                        
+                        switch (this.sortColumn) {
+                            case 'name':
+                                aVal = a.name || '';
+                                bVal = b.name || '';
+                                break;
+                            case 'type':
+                                // Handle both address types and group types
+                                if (this.activeSection === 'addresses') {
+                                    aVal = this.getAddressType(a);
+                                    bVal = this.getAddressType(b);
+                                } else if (this.activeSection === 'address-groups') {
+                                    aVal = this.getAddressGroupType(a);
+                                    bVal = this.getAddressGroupType(b);
+                                } else {
+                                    aVal = '';
+                                    bVal = '';
+                                }
+                                break;
+                            case 'value':
+                                aVal = a['ip-netmask'] || a.fqdn || a['ip-range'] || '';
+                                bVal = b['ip-netmask'] || b.fqdn || b['ip-range'] || '';
+                                break;
+                            case 'protocol':
+                                aVal = this.getServiceProtocol(a);
+                                bVal = this.getServiceProtocol(b);
+                                break;
+                            case 'port':
+                                aVal = this.getServicePortNumber(a);
+                                bVal = this.getServicePortNumber(b);
+                                break;
+                            case 'members':
+                                aVal = this.getMemberCount(a);
+                                bVal = this.getMemberCount(b);
+                                break;
+                            case 'location':
+                                aVal = this.getLocationString(a);
+                                bVal = this.getLocationString(b);
+                                break;
+                            case 'description':
+                                aVal = a.description || '';
+                                bVal = b.description || '';
+                                break;
+                            default:
+                                aVal = '';
+                                bVal = '';
+                        }
+                        
+                        // Convert to lowercase for case-insensitive sorting (except for numbers)
+                        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+                        
+                        if (this.sortDirection === 'asc') {
+                            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                        } else {
+                            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                        }
+                    });
+                },
+                
+                getAddressType(item) {
+                    if (item['ip-netmask']) return 'ip-netmask';
+                    if (item.fqdn) return 'fqdn';
+                    if (item['ip-range']) return 'ip-range';
+                    return '';
+                },
+                
+                getLocationString(item) {
+                    if (item['parent-device-group']) return `dg:${item['parent-device-group']}`;
+                    if (item['parent-template']) return `template:${item['parent-template']}`;
+                    return 'shared';
+                },
+                
+                getServiceProtocol(item) {
+                    if (item.protocol) {
+                        if (item.protocol.tcp && item.protocol.udp) return 'tcp/udp';
+                        if (item.protocol.tcp) return 'tcp';
+                        if (item.protocol.udp) return 'udp';
+                    }
+                    return '';
+                },
+                
+                getServicePort(item) {
+                    if (item.protocol) {
+                        if (item.protocol.tcp && item.protocol.tcp.port) {
+                            return item.protocol.tcp.port;
+                        }
+                        if (item.protocol.udp && item.protocol.udp.port) {
+                            return item.protocol.udp.port;
+                        }
+                    }
+                    return '-';
+                },
+                
+                getServicePortNumber(item) {
+                    const port = this.getServicePort(item);
+                    if (port === '-') return 0;
+                    // Extract first number for sorting (handles ranges like "80-90")
+                    const match = port.match(/\d+/);
+                    return match ? parseInt(match[0]) : 0;
+                },
+                
+                getMemberCount(item) {
+                    // For address groups
+                    if (item.static && item.static.length > 0) {
+                        return item.static.length;
+                    }
+                    // For service groups
+                    if (item.members && item.members.length > 0) {
+                        return item.members.length;
+                    }
+                    return 0;
+                },
+                
+                getAddressGroupType(item) {
+                    if (item.static && item.static.length > 0) return 'static';
+                    if (item.dynamic) return 'dynamic';
+                    return '';
+                },
+                
+                showDetail(item) {
+                    this.detailItem = item;
+                    this.showDetailModal = true;
+                },
+                
+                showDeviceGroupDetail(dg) {
+                    this.detailItem = dg;
+                    this.showDetailModal = true;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
