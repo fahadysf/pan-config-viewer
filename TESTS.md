@@ -46,6 +46,8 @@ The full test runner will:
 
 ### Method 2: Manual Testing
 
+**Note**: The pytest tests are designed to work with the Docker container API. Running them locally requires the API to be running on http://localhost:8000.
+
 #### Step 1: Start the API
 
 ```bash

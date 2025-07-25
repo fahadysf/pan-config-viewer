@@ -7,14 +7,18 @@ from typing import Dict, Any
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# The test client will be provided by the fixture
+# We need to delay the import until the environment is set by pytest
+from fastapi.testclient import TestClient
+
+# Import app - tests will run with Docker API
+from main import app
+client = TestClient(app)
 
 
 class TestConfigurationEndpoints:
     """Test configuration management endpoints"""
     
-    def test_list_configs(self, test_client):
-        client = test_client
+    def test_list_configs(self):
         """Test listing available configurations"""
         response = client.get("/api/v1/configs")
         assert response.status_code == 200
@@ -23,9 +27,8 @@ class TestConfigurationEndpoints:
         assert "test_panorama" in data["configs"]
         assert data["count"] > 0
     
-    def test_get_config_info(self, test_client):
-        """Test getting configuration info"
-        client = test_client""
+    def test_get_config_info(self):
+        """Test getting configuration info"""
         response = client.get("/api/v1/configs/test_panorama/info")
         assert response.status_code == 200
         data = response.json()
@@ -33,9 +36,8 @@ class TestConfigurationEndpoints:
         assert "size" in data
         assert "modified" in data
     
-    def test_get_config_info_not_found(self, test_client):
-        """Test getting info for non-existent config"
-        client = test_client""
+    def test_get_config_info_not_found(self):
+        """Test getting info for non-existent config"""
         response = client.get("/api/v1/configs/nonexistent/info")
         assert response.status_code == 404
 
