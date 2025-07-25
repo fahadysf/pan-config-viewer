@@ -52,10 +52,20 @@ def set_real_config(real_config_path):
 @pytest.fixture(scope="module")
 def test_client():
     """Create test client for API"""
-    from fastapi.testclient import TestClient
-    from main import app
+    # Import modules inside fixture to ensure environment is set
+    import importlib
+    import sys
     
-    with TestClient(app) as client:
+    # Remove main module if already imported to force reload
+    if 'main' in sys.modules:
+        del sys.modules['main']
+    
+    # Import fresh with current environment
+    from fastapi.testclient import TestClient
+    import main
+    importlib.reload(main)
+    
+    with TestClient(main.app) as client:
         yield client
 
 

@@ -7,23 +7,14 @@ from typing import Dict, Any
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set test config path before importing
-os.environ["CONFIG_FILES_PATH"] = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "test_configs"
-)
-
-# Import after setting environment
-from fastapi.testclient import TestClient
-from main import app
-
-client = TestClient(app)
+# The test client will be provided by the fixture
 
 
 class TestConfigurationEndpoints:
     """Test configuration management endpoints"""
     
-    def test_list_configs(self):
+    def test_list_configs(self, test_client):
+        client = test_client
         """Test listing available configurations"""
         response = client.get("/api/v1/configs")
         assert response.status_code == 200
@@ -32,8 +23,9 @@ class TestConfigurationEndpoints:
         assert "test_panorama" in data["configs"]
         assert data["count"] > 0
     
-    def test_get_config_info(self):
-        """Test getting configuration info"""
+    def test_get_config_info(self, test_client):
+        """Test getting configuration info"
+        client = test_client""
         response = client.get("/api/v1/configs/test_panorama/info")
         assert response.status_code == 200
         data = response.json()
@@ -41,8 +33,9 @@ class TestConfigurationEndpoints:
         assert "size" in data
         assert "modified" in data
     
-    def test_get_config_info_not_found(self):
-        """Test getting info for non-existent config"""
+    def test_get_config_info_not_found(self, test_client):
+        """Test getting info for non-existent config"
+        client = test_client""
         response = client.get("/api/v1/configs/nonexistent/info")
         assert response.status_code == 404
 
@@ -77,13 +70,13 @@ class TestAddressEndpoints:
         response = client.get("/api/v1/configs/test_panorama/addresses?location=shared")
         assert response.status_code == 200
         addresses = response.json()
-        assert all(addr["parent_device_group"] is None for addr in addresses)
+        assert all(addr["parent-device-group"] is None for addr in addresses)
         
         # Test device-group addresses only
         response = client.get("/api/v1/configs/test_panorama/addresses?location=device-group")
         assert response.status_code == 200
         addresses = response.json()
-        assert all(addr["parent_device_group"] is not None for addr in addresses)
+        assert all(addr["parent-device-group"] is not None for addr in addresses)
     
     def test_get_specific_address(self):
         """Test getting a specific address"""
@@ -91,7 +84,7 @@ class TestAddressEndpoints:
         assert response.status_code == 200
         address = response.json()
         assert address["name"] == "test-server"
-        assert address["ip_netmask"] == "10.1.1.100"
+        assert address["ip-netmask"] == "10.1.1.100"
         assert address["description"] == "Test server"
         assert "xpath" in address
         assert address["xpath"] is not None
@@ -250,7 +243,7 @@ class TestDeviceGroupEndpoints:
         assert isinstance(addresses, list)
         assert len(addresses) == 1
         assert addresses[0]["name"] == "dg-server"
-        assert addresses[0]["parent_device_group"] == "test-dg"
+        assert addresses[0]["parent-device-group"] == "test-dg"
     
     def test_get_device_group_address_groups(self):
         """Test getting address groups for a device group"""
@@ -424,9 +417,9 @@ class TestLocationTracking:
         
         assert address["xpath"] is not None
         assert "/shared/address/entry[@name='test-server']" in address["xpath"]
-        assert address["parent_device_group"] is None
-        assert address["parent_template"] is None
-        assert address["parent_vsys"] is None
+        assert address["parent-device-group"] is None
+        assert address["parent-template"] is None
+        assert address["parent-vsys"] is None
     
     def test_device_group_object_location(self):
         """Test that device group objects have correct location info"""
@@ -435,10 +428,10 @@ class TestLocationTracking:
         addresses = response.json()
         
         dg_address = addresses[0]
-        assert dg_address["parent_device_group"] == "test-dg"
+        assert dg_address["parent-device-group"] == "test-dg"
         assert "/device-group/entry[@name='test-dg']" in dg_address["xpath"]
-        assert dg_address["parent_template"] is None
-        assert dg_address["parent_vsys"] is None
+        assert dg_address["parent-template"] is None
+        assert dg_address["parent-vsys"] is None
     
     def test_template_object_location(self):
         """Test that template objects have correct location info"""
@@ -451,8 +444,8 @@ class TestLocationTracking:
         assert len(template_addresses) == 1
         
         template_addr = template_addresses[0]
-        assert template_addr["parent_template"] == "test-template"
-        assert template_addr["parent_vsys"] == "vsys1"
+        assert template_addr["parent-template"] == "test-template"
+        assert template_addr["parent-vsys"] == "vsys1"
         assert "/template/entry[@name='test-template']" in template_addr["xpath"]
 
 

@@ -73,13 +73,12 @@ python tests/test_basic.py || {
 
 # Run tests with the test configuration
 echo -e "\n📋 Running tests with test configuration..."
-export CONFIG_FILES_PATH="tests/test_configs"
-pytest tests/test_api.py -v --tb=short --continue-on-collection-errors -x || TEST_FAILED=1
+cd /Users/fahad/code/pan-config-viewer-simple
+CONFIG_FILES_PATH="$(pwd)/tests/test_configs" pytest tests/test_api.py -v --tb=short --continue-on-collection-errors -x || TEST_FAILED=1
 
 # Run tests with the real configuration
 echo -e "\n📊 Running tests with real configuration..."
-export CONFIG_FILES_PATH="config-files"
-pytest tests/test_real_config.py -v --tb=short --continue-on-collection-errors -x || TEST_FAILED=1
+CONFIG_FILES_PATH="$(pwd)/config-files" pytest tests/test_real_config.py -v --tb=short --continue-on-collection-errors -x || TEST_FAILED=1
 
 # Run all tests with coverage
 echo -e "\n📈 Running all tests with coverage..."

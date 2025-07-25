@@ -11,16 +11,18 @@ from typing import Dict, Any, List
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set config path before importing the app
-os.environ["CONFIG_FILES_PATH"] = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "config-files"
-)
-
-# Import after setting environment
+# We need to delay the import until the environment is set by pytest
 from fastapi.testclient import TestClient
-from main import app
 
+# Set config path if not already set
+if "CONFIG_FILES_PATH" not in os.environ:
+    os.environ["CONFIG_FILES_PATH"] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "config-files"
+    )
+
+# Import app after environment is set
+from main import app
 client = TestClient(app)
 
 # Configuration file name without extension
@@ -40,7 +42,8 @@ class TestRealConfigurationEndpoints:
         assert "configs" in data
         assert CONFIG_NAME in data["configs"]
         assert data["count"] >= 1
-        assert data["path"] == "/Users/fahad/code/pan-config-viewer-simple/config-files"
+        # Path will vary based on environment, just check it ends correctly
+        assert data["path"].endswith("config-files")
     
     def test_get_config_info(self):
         """Test getting configuration info for real config"""
@@ -86,7 +89,7 @@ class TestRealAddressEndpoints:
         
         # Check IPv6 address
         caddy_addr = next(a for a in addresses if a["name"] == "caddy-ipv6")
-        assert caddy_addr["ip_netmask"] == "fd52:16a2:30e:b503::1000:1111"
+        assert caddy_addr["ip-netmask"] == "fd52:16a2:30e:b503::1000:1111"
         assert "ipv6" in caddy_addr["tag"]
     
     def test_get_addresses_with_tag_filter(self):
@@ -107,9 +110,9 @@ class TestRealAddressEndpoints:
         
         assert address["name"] == "gns3-vm.fy.loc"
         assert address["fqdn"] == "gns3-vm.fy.loc"
-        assert address["ip_netmask"] is None
+        assert address["ip-netmask"] is None
         assert address["xpath"] is not None
-        assert address["parent_device_group"] is None  # Shared address
+        assert address["parent-device-group"] is None  # Shared address
 
 
 class TestRealAddressGroupEndpoints:
@@ -281,7 +284,7 @@ class TestRealDeviceGroupEndpoints:
             assert "destination" in rule
             assert "action" in rule
             assert "xpath" in rule
-            assert rule["parent_device_group"] == "fy-lab-parent-dg"
+            assert rule["parent-device-group"] == "fy-lab-parent-dg"
 
 
 class TestRealTemplateEndpoints:
@@ -423,20 +426,20 @@ class TestRealLocationTracking:
         
         # All shared addresses should have no parent context
         for addr in addresses:
-            assert addr["parent_device_group"] is None
-            assert addr["parent_template"] is None
-            assert addr["parent_vsys"] is None
+            assert addr["parent-device-group"] is None
+            assert addr["parent-template"] is None
+            assert addr["parent-vsys"] is None
             assert "/shared/address/" in addr["xpath"]
     
     def test_device_group_objects_have_correct_parent(self):
-        """Test that device group objects have correct parent_device_group"""
+        """Test that device group objects have correct parent-device-group"""
         response = client.get(f"/api/v1/configs/{CONFIG_NAME}/device-groups/fy-home-net-fw-dg/addresses")
         assert response.status_code == 200
         addresses = response.json()
         
         # All addresses from this device group should have it as parent
         for addr in addresses:
-            assert addr["parent_device_group"] == "fy-home-net-fw-dg"
+            assert addr["parent-device-group"] == "fy-home-net-fw-dg"
             assert "/device-group/entry[@name='fy-home-net-fw-dg']" in addr["xpath"]
     
     def test_address_location_filtering(self):
@@ -463,9 +466,9 @@ class TestRealLocationTracking:
         template_addresses = response.json()
         
         # Verify filtering worked
-        assert all(a["parent_device_group"] is None for a in shared_addresses)
-        assert all(a["parent_device_group"] is not None for a in dg_addresses)
-        assert all(a["parent_template"] is not None for a in template_addresses)
+        assert all(a["parent-device-group"] is None for a in shared_addresses)
+        assert all(a["parent-device-group"] is not None for a in dg_addresses)
+        assert all(a["parent-template"] is not None for a in template_addresses)
         
         # The sum might not equal total due to overlaps, but each should be less than total
         assert len(shared_addresses) <= total_count
