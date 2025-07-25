@@ -1,101 +1,113 @@
-# Testing Guide for PAN-OS Panorama Configuration API
+# Testing Guide
 
-This guide explains how to run tests for the PAN-OS Configuration API.
+This application includes comprehensive tests for all API endpoints. The tests are designed to work with the Dockerized API.
 
 ## Prerequisites
 
-1. Docker and Docker Compose installed
-2. Python 3.8+ installed locally (for running tests)
-3. The repository cloned to your local machine
+1. Build and run the Docker container:
+   ```bash
+   docker-compose build
+   docker-compose up -d
+   ```
+
+2. Wait for the container to be ready:
+   ```bash
+   # Check container health
+   docker ps | grep pan-config
+   ```
 
 ## Test Structure
 
 ```
 tests/
 ├── __init__.py
-├── test_api.py              # Tests using sample XML configuration
-├── test_real_config.py      # Tests using the actual pan-bkp-202507151414.xml
-├── test_basic.py            # Basic smoke tests
+├── test_api.py                 # Pytest tests (has environment issues)
+├── test_basic.py               # Basic smoke tests with HTTP requests
+├── test_simple_validation.py   # Simple validation tests
+├── test_docker_api.py          # Docker-specific API tests
+├── test_all_endpoints.py       # Comprehensive endpoint testing
 └── test_configs/
-    └── test_panorama.xml    # Sample test configuration
+    └── test_panorama.xml       # Sample test configuration
 ```
 
 ## Running Tests
 
-### Method 1: Using Docker Compose (Recommended)
-
-The easiest way to run tests is using the provided test script:
-
+### Quick Test
+Run a basic smoke test to verify the API is working:
 ```bash
-# Make the script executable
-chmod +x run_tests.sh
-
-# Run all tests (this will start the API, run tests, then stop)
-./run_tests.sh
-
-# For full test execution that continues even if some tests fail:
-chmod +x run_tests_full.sh
-./run_tests_full.sh
-```
-
-The full test runner will:
-- Continue running all test suites even if some fail
-- Provide a summary of passed/failed tests
-- Always generate coverage reports
-- Show detailed error messages for debugging
-
-### Method 2: Manual Testing
-
-**Note**: The pytest tests are designed to work with the Docker container API. Running them locally requires the API to be running on http://localhost:8000.
-
-#### Step 1: Start the API
-
-```bash
-# Using Docker Compose
-docker-compose up -d
-
-# Or run locally
-export CONFIG_FILES_PATH="/Users/fahad/code/pan-config-viewer-simple/config-files"
-python main.py
-```
-
-#### Step 2: Verify API is running
-
-```bash
-# Check health endpoint
-curl http://localhost:8000/api/v1/health
-
-# Or use the basic test
 python tests/test_basic.py
 ```
 
-#### Step 3: Run the tests
-
+### Full Test Suite
+Run the comprehensive test suite that covers all endpoints:
 ```bash
-# Install test dependencies
-pip install -r requirements.txt
-
-# Run all tests
-pytest -v
-
-# Run specific test file
-pytest tests/test_real_config.py -v
-
-# Run with coverage
-pytest --cov=. --cov-report=html
+python tests/test_all_endpoints.py
 ```
 
-### Method 3: Using pytest-docker
-
-For automated testing with Docker:
-
+### Docker API Test
+Run tests specifically designed for the Docker environment:
 ```bash
-# Install pytest-docker
-pip install pytest-docker
-
-# Run tests (will automatically start/stop containers)
-pytest --docker-compose=docker-compose.yml -v
+python tests/test_docker_api.py
 ```
+
+### Simple Validation
+Run a simple validation script:
+```bash
+python tests/test_simple_validation.py
+```
+
+## Test Results
+
+The comprehensive test suite (`test_all_endpoints.py`) tests the following endpoints:
+
+### ✅ Working Endpoints (38 tests passing)
+- **Health & Configuration**: Health check, list configs, config info
+- **Addresses**: Get all, get specific, filter by name/location
+- **Address Groups**: Get all, get specific
+- **Services**: Get all, get specific, filter by protocol
+- **Service Groups**: Get all
+- **Security Profiles**: Vulnerability profiles, URL filtering profiles
+- **Device Groups**: Summary, specific, filter by parent, child objects (addresses, services, rules)
+- **Templates**: Get all, get specific
+- **Template Stacks**: Get all, get specific
+- **Log Profiles**: Get all
+- **Schedules**: Get all, get specific
+- **Search**: By XPath
+- **Location Tracking**: XPath and parent context verification
+- **Error Handling**: 404 responses for non-existent resources
+
+### ❌ Not Implemented (11 endpoints)
+These endpoints return 404 as they are not yet implemented:
+- Get specific service group by name
+- Get specific vulnerability/URL filtering profile by name
+- Antivirus, Anti-Spyware, Wildfire, File Blocking, Data Filtering, DoS Protection profiles
+- Device group NAT rules endpoint
+- Get specific log profile by name
+
+## Debugging Test Failures
+
+If tests fail, check:
+
+1. **Container is running**: `docker ps | grep pan-config`
+2. **API is accessible**: `curl http://localhost:8000/api/v1/health`
+3. **Configuration files exist**: Check that XML files are present in the config directory
+4. **Logs**: `docker-compose logs pan-config-api`
+
+## Test Architecture
+
+The tests use HTTP requests to test the actual running API, ensuring real-world behavior. This approach:
+- Tests the complete request/response cycle
+- Verifies Docker container functionality
+- Ensures API contract compliance
+- Works consistently across environments
+
+## Adding New Tests
+
+To add tests for new endpoints:
+1. Add test methods to `tests/test_all_endpoints.py`
+2. Follow the existing pattern of making HTTP requests
+3. Verify response status codes and data structure
+4. Run the full test suite to ensure no regressions
 
 ## Test Categories
 

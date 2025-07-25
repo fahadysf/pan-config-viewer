@@ -49,23 +49,52 @@ def set_real_config(real_config_path):
         os.environ.pop("CONFIG_FILES_PATH", None)
 
 
-@pytest.fixture(scope="module")
-def test_client():
-    """Create test client for API"""
-    # Import modules inside fixture to ensure environment is set
-    import importlib
-    import sys
+@pytest.fixture
+def test_client_factory():
+    """Factory to create test clients with specific configs"""
+    def _create_client(config_type="test"):
+        import sys
+        
+        # Clear any cached modules
+        for module in list(sys.modules.keys()):
+            if module.startswith(('main', 'parser', 'models')):
+                del sys.modules[module]
+        
+        # Set config path based on type
+        if config_type == "test":
+            config_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "tests", "test_configs"
+            )
+        else:  # real
+            config_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "config-files"
+            )
+        
+        os.environ["CONFIG_FILES_PATH"] = config_path
+        
+        # Import fresh app
+        from fastapi.testclient import TestClient
+        from main import app
+        
+        # Return client context manager
+        return TestClient(app)
     
-    # Remove main module if already imported to force reload
-    if 'main' in sys.modules:
-        del sys.modules['main']
-    
-    # Import fresh with current environment
-    from fastapi.testclient import TestClient
-    import main
-    importlib.reload(main)
-    
-    with TestClient(main.app) as client:
+    return _create_client
+
+
+@pytest.fixture
+def test_client(test_client_factory):
+    """Create test client for test config"""
+    with test_client_factory("test") as client:
+        yield client
+
+
+@pytest.fixture
+def real_client(test_client_factory):
+    """Create test client for real config"""
+    with test_client_factory("real") as client:
         yield client
 
 
