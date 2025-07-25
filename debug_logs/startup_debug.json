@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-07-25T13:55:48.455962",
+  "CONFIG_FILES_PATH": "/Users/fahad/code/pan-config-viewer-simple/tests/test_configs",
+  "before_startup": {
+    "available_configs": []
+  },
+  "after_startup": {
+    "available_configs": []
+  },
+  "test_client_response": {
+    "status_code": 200,
+    "data": {
+      "configs": [
+        "test_panorama"
+      ],
+      "count": 1,
+      "path": "/Users/fahad/code/pan-config-viewer-simple/tests/test_configs"
+    }
+  }
+}

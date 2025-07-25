@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-07-25T13:55:02.689820",
+  "python_path": [
+    "/Users/fahad/code/pan-config-viewer-simple",
+    "/opt/homebrew/Caskroom/miniconda/base/lib/python312.zip",
+    "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12",
+    "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/lib-dynload",
+    "/opt/homebrew/Caskroom/miniconda/base/lib/python3.12/site-packages"
+  ],
+  "current_dir": "/Users/fahad/code/pan-config-viewer-simple",
+  "env_vars": {
+    "CONFIG_FILES_PATH": "NOT SET",
+    "PYTHONPATH": "NOT SET"
+  },
+  "test_configs": {
+    "path": "/Users/fahad/code/pan-config-viewer-simple/tests/test_configs",
+    "exists": true,
+    "files": [
+      "/Users/fahad/code/pan-config-viewer-simple/tests/test_configs/test_panorama.xml"
+    ]
+  },
+  "real_configs": {
+    "path": "/Users/fahad/code/pan-config-viewer-simple/config-files",
+    "exists": true,
+    "files": [
+      "/Users/fahad/code/pan-config-viewer-simple/config-files/pan-bkp-202507151414.xml"
+    ]
+  },
+  "docker_status": {},
+  "import_tests": {
+    "test_config": {
+      "success": true,
+      "available_configs": [],
+      "config_path": "/Users/fahad/code/pan-config-viewer-simple/tests/test_configs"
+    },
+    "real_config": {
+      "success": true,
+      "available_configs": [],
+      "config_path": "/Users/fahad/code/pan-config-viewer-simple/config-files"
+    }
+  }
+}
