@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  pan-config-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pan-config-viewer:latest
+    container_name: pan-config-viewer
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # Mount directory containing XML files
+      - ${CONFIG_DIR:-./config-files}:/config-files:ro
+    environment:
+      - CONFIG_FILES_PATH=/config-files
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - WORKERS=${WORKERS:-4}
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

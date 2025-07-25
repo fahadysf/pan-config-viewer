@@ -1,0 +1,289 @@
+<?xml version="1.0"?>
+<config version="11.2.0" urldb="paloaltonetworks">
+  <mgt-config>
+    <users>
+      <entry name="admin">
+        <phash>$1$ymsinrsr$/sINNhPnd09FwVfNDL70P0</phash>
+        <permissions>
+          <role-based>
+            <superuser>yes</superuser>
+          </role-based>
+        </permissions>
+      </entry>
+    </users>
+  </mgt-config>
+  <shared>
+    <address>
+      <entry name="test-server">
+        <ip-netmask>10.1.1.100</ip-netmask>
+        <description>Test server</description>
+        <tag>
+          <member>test</member>
+        </tag>
+      </entry>
+      <entry name="web-server">
+        <fqdn>web.example.com</fqdn>
+        <description>Web server FQDN</description>
+      </entry>
+    </address>
+    <address-group>
+      <entry name="test-servers">
+        <static>
+          <member>test-server</member>
+          <member>web-server</member>
+        </static>
+        <description>Test server group</description>
+      </entry>
+    </address-group>
+    <service>
+      <entry name="tcp-8080">
+        <protocol>
+          <tcp>
+            <port>8080</port>
+            <override>
+              <no/>
+            </override>
+          </tcp>
+        </protocol>
+        <description>Test TCP service</description>
+      </entry>
+      <entry name="udp-5000">
+        <protocol>
+          <udp>
+            <port>5000</port>
+            <override>
+              <no/>
+            </override>
+          </udp>
+        </protocol>
+      </entry>
+    </service>
+    <service-group>
+      <entry name="test-services">
+        <members>
+          <member>tcp-8080</member>
+          <member>udp-5000</member>
+        </members>
+      </entry>
+    </service-group>
+    <profiles>
+      <vulnerability>
+        <entry name="test-vuln-profile">
+          <rules>
+            <entry name="test-rule">
+              <action>
+                <default/>
+              </action>
+              <vendor-id>
+                <member>any</member>
+              </vendor-id>
+              <severity>
+                <member>critical</member>
+              </severity>
+              <cve>
+                <member>any</member>
+              </cve>
+              <threat-name>any</threat-name>
+              <host>any</host>
+              <category>any</category>
+            </entry>
+          </rules>
+          <description>Test vulnerability profile</description>
+        </entry>
+      </vulnerability>
+      <url-filtering>
+        <entry name="test-url-profile">
+          <description>Test URL filtering profile</description>
+          <action>block</action>
+          <block>
+            <member>adult</member>
+            <member>hacking</member>
+          </block>
+          <alert>
+            <member>social-networking</member>
+          </alert>
+        </entry>
+      </url-filtering>
+    </profiles>
+    <log-settings>
+      <profiles>
+        <entry name="test-log-profile">
+          <match-list>
+            <entry name="traffic">
+              <log-type>traffic</log-type>
+              <send-to-panorama>yes</send-to-panorama>
+            </entry>
+          </match-list>
+        </entry>
+      </profiles>
+    </log-settings>
+    <schedule>
+      <entry name="test-schedule">
+        <schedule-type>
+          <recurring>
+            <daily>
+              <member>09:00-17:00</member>
+            </daily>
+          </recurring>
+        </schedule-type>
+      </entry>
+    </schedule>
+  </shared>
+  <devices>
+    <entry name="localhost.localdomain">
+      <device-group>
+        <entry name="test-dg">
+          <description>Test device group</description>
+          <devices>
+            <entry name="FW001"/>
+            <entry name="FW002"/>
+          </devices>
+          <address>
+            <entry name="dg-server">
+              <ip-netmask>192.168.1.100</ip-netmask>
+              <description>Device group server</description>
+            </entry>
+          </address>
+          <address-group>
+            <entry name="dg-servers">
+              <static>
+                <member>dg-server</member>
+              </static>
+            </entry>
+          </address-group>
+          <service>
+            <entry name="tcp-9090">
+              <protocol>
+                <tcp>
+                  <port>9090</port>
+                  <override>
+                    <no/>
+                  </override>
+                </tcp>
+              </protocol>
+            </entry>
+          </service>
+          <service-group>
+            <entry name="dg-services">
+              <members>
+                <member>tcp-9090</member>
+              </members>
+            </entry>
+          </service-group>
+          <pre-rulebase>
+            <security>
+              <rules>
+                <entry name="pre-rule-1">
+                  <from>
+                    <member>trust</member>
+                  </from>
+                  <to>
+                    <member>untrust</member>
+                  </to>
+                  <source>
+                    <member>any</member>
+                  </source>
+                  <destination>
+                    <member>any</member>
+                  </destination>
+                  <application>
+                    <member>any</member>
+                  </application>
+                  <service>
+                    <member>any</member>
+                  </service>
+                  <action>allow</action>
+                  <log-start>yes</log-start>
+                  <log-end>yes</log-end>
+                </entry>
+              </rules>
+            </security>
+            <nat>
+              <rules>
+                <entry name="pre-nat-1">
+                  <from>
+                    <member>inside</member>
+                  </from>
+                  <to>
+                    <member>outside</member>
+                  </to>
+                  <source>
+                    <member>any</member>
+                  </source>
+                  <destination>
+                    <member>any</member>
+                  </destination>
+                  <service>any</service>
+                </entry>
+              </rules>
+            </nat>
+          </pre-rulebase>
+          <post-rulebase>
+            <security>
+              <rules>
+                <entry name="post-rule-1">
+                  <from>
+                    <member>any</member>
+                  </from>
+                  <to>
+                    <member>any</member>
+                  </to>
+                  <source>
+                    <member>any</member>
+                  </source>
+                  <destination>
+                    <member>any</member>
+                  </destination>
+                  <application>
+                    <member>any</member>
+                  </application>
+                  <service>
+                    <member>any</member>
+                  </service>
+                  <action>deny</action>
+                </entry>
+              </rules>
+            </security>
+          </post-rulebase>
+        </entry>
+        <entry name="child-dg">
+          <parent-dg>test-dg</parent-dg>
+          <description>Child device group</description>
+        </entry>
+      </device-group>
+      <template>
+        <entry name="test-template">
+          <description>Test template</description>
+          <settings>
+            <default-vsys>vsys1</default-vsys>
+          </settings>
+          <config>
+            <devices>
+              <entry name="localhost.localdomain">
+                <vsys>
+                  <entry name="vsys1">
+                    <address>
+                      <entry name="template-server">
+                        <ip-netmask>10.10.10.10</ip-netmask>
+                      </entry>
+                    </address>
+                  </entry>
+                </vsys>
+              </entry>
+            </devices>
+          </config>
+        </entry>
+      </template>
+      <template-stack>
+        <entry name="test-stack">
+          <templates>
+            <member>test-template</member>
+          </templates>
+          <devices>
+            <entry name="FW001"/>
+          </devices>
+        </entry>
+      </template-stack>
+    </entry>
+  </devices>
+</config>
