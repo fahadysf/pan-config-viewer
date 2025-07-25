@@ -38,6 +38,267 @@
         .scrollbar-thin::-webkit-scrollbar-track { background: #f1f1f1; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
         .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* DataTables Custom Styling */
+        .dataTables_wrapper {
+            padding: 0;
+        }
+        
+        /* Search input styling */
+        .dataTables_filter {
+            margin-bottom: 1rem;
+        }
+        
+        .dataTables_filter input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            width: 300px;
+        }
+        
+        .dataTables_filter input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Length select styling */
+        .dataTables_length {
+            margin-bottom: 1rem;
+        }
+        
+        .dataTables_length select {
+            padding: 0.5rem 2rem 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        
+        /* Buttons styling */
+        .dt-buttons {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .dt-button {
+            padding: 0.5rem 1rem !important;
+            background-color: #f9fafb !important;
+            color: #374151 !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease-in-out !important;
+        }
+        
+        .dt-button:hover {
+            background-color: #f3f4f6 !important;
+            border-color: #9ca3af !important;
+        }
+        
+        .dt-button:focus {
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+        
+        /* Table styling */
+        table.dataTable {
+            border-collapse: collapse !important;
+            width: 100% !important;
+        }
+        
+        table.dataTable thead {
+            background-color: #f9fafb;
+        }
+        
+        table.dataTable thead th {
+            padding: 0.75rem 1.5rem !important;
+            text-align: left !important;
+            font-size: 0.75rem !important;
+            font-weight: 500 !important;
+            color: #6b7280 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        table.dataTable thead th:hover {
+            background-color: #f3f4f6;
+        }
+        
+        /* Sorting arrows */
+        table.dataTable thead .sorting:before,
+        table.dataTable thead .sorting_asc:before,
+        table.dataTable thead .sorting_desc:before,
+        table.dataTable thead .sorting:after,
+        table.dataTable thead .sorting_asc:after,
+        table.dataTable thead .sorting_desc:after {
+            font-family: 'Font Awesome 6 Free';
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            color: #9ca3af;
+            font-weight: 900;
+        }
+        
+        table.dataTable thead .sorting:before { content: '\f0dc'; }
+        table.dataTable thead .sorting:after { content: ''; }
+        table.dataTable thead .sorting_asc:before { content: '\f0de'; color: #374151; }
+        table.dataTable thead .sorting_asc:after { content: ''; }
+        table.dataTable thead .sorting_desc:before { content: '\f0dd'; color: #374151; }
+        table.dataTable thead .sorting_desc:after { content: ''; }
+        
+        /* Table body styling */
+        table.dataTable tbody td {
+            padding: 1rem 1.5rem !important;
+            font-size: 0.875rem !important;
+            color: #374151 !important;
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+        
+        table.dataTable tbody tr {
+            background-color: white;
+        }
+        
+        table.dataTable tbody tr:hover {
+            background-color: #f9fafb !important;
+            cursor: pointer;
+        }
+        
+        table.dataTable tbody tr.odd {
+            background-color: white;
+        }
+        
+        table.dataTable tbody tr.even {
+            background-color: white;
+        }
+        
+        /* Remove default borders */
+        table.dataTable,
+        table.dataTable td,
+        table.dataTable th {
+            border: none !important;
+        }
+        
+        /* Pagination styling */
+        .dataTables_paginate {
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dataTables_paginate .paginate_button {
+            padding: 0.375rem 0.75rem;
+            margin: 0 0.125rem;
+            border: 1px solid #d1d5db;
+            background-color: white;
+            color: #374151;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+        
+        .dataTables_paginate .paginate_button:hover:not(.disabled) {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        
+        .dataTables_paginate .paginate_button.current {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+        
+        .dataTables_paginate .paginate_button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .dataTables_paginate .paginate_button.previous,
+        .dataTables_paginate .paginate_button.next {
+            font-weight: 500;
+        }
+        
+        .dataTables_paginate .paginate_button:first-child {
+            border-top-left-radius: 0.375rem;
+            border-bottom-left-radius: 0.375rem;
+        }
+        
+        .dataTables_paginate .paginate_button:last-child {
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+        
+        /* Info text styling */
+        .dataTables_info {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        /* Empty table styling */
+        .dataTables_empty {
+            text-align: center;
+            color: #6b7280;
+            padding: 2rem !important;
+        }
+        
+        /* Processing indicator */
+        .dataTables_processing {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Wrapper layout */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            float: none;
+            text-align: left;
+        }
+        
+        .dataTables_wrapper .dataTables_filter {
+            text-align: right;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate {
+            float: none;
+            text-align: center;
+        }
+        
+        .dataTables_wrapper .dataTables_info {
+            float: none;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Top controls layout */
+        .dataTables_wrapper .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .dataTables_wrapper .top .dataTables_length {
+            margin-bottom: 0;
+        }
+        
+        .dataTables_wrapper .top .dataTables_filter {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-50" x-data="configViewer()" x-init="init()">
@@ -563,22 +824,46 @@
                         data: tableData,
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                        dom: 'Bfrtip',
+                        dom: '<"top"<"dt-buttons"B>lf>rt<"bottom"ip><"clear">',
                         buttons: [
-                            'copy', 'csv', 'excel', 'pdf', 'print'
-                        ],
-                        columnDefs: [
-                            { className: "text-sm", targets: "_all" }
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy'
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv'
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel'
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="fas fa-file-pdf"></i> PDF',
+                                className: 'dt-button-pdf'
+                            },
+                            {
+                                extend: 'print',
+                                text: '<i class="fas fa-print"></i> Print',
+                                className: 'dt-button-print'
+                            }
                         ],
                         language: {
-                            search: "Search all columns:",
-                            searchPlaceholder: "Type to search..."
-                        },
-                        initComplete: function() {
-                            // Add Tailwind classes to DataTables elements
-                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search addresses...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ addresses",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No addresses found"
                         }
                     });
                     
@@ -626,22 +911,46 @@
                         data: tableData,
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                        dom: 'Bfrtip',
+                        dom: '<"top"<"dt-buttons"B>lf>rt<"bottom"ip><"clear">',
                         buttons: [
-                            'copy', 'csv', 'excel', 'pdf', 'print'
-                        ],
-                        columnDefs: [
-                            { className: "text-sm", targets: "_all" }
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy'
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv'
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel'
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="fas fa-file-pdf"></i> PDF',
+                                className: 'dt-button-pdf'
+                            },
+                            {
+                                extend: 'print',
+                                text: '<i class="fas fa-print"></i> Print',
+                                className: 'dt-button-print'
+                            }
                         ],
                         language: {
-                            search: "Search all columns:",
-                            searchPlaceholder: "Type to search..."
-                        },
-                        initComplete: function() {
-                            // Add Tailwind classes to DataTables elements
-                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search address groups...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ address groups",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No address groups found"
                         }
                     });
                 },
@@ -680,22 +989,46 @@
                         data: tableData,
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                        dom: 'Bfrtip',
+                        dom: '<"top"<"dt-buttons"B>lf>rt<"bottom"ip><"clear">',
                         buttons: [
-                            'copy', 'csv', 'excel', 'pdf', 'print'
-                        ],
-                        columnDefs: [
-                            { className: "text-sm", targets: "_all" }
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy'
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv'
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel'
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="fas fa-file-pdf"></i> PDF',
+                                className: 'dt-button-pdf'
+                            },
+                            {
+                                extend: 'print',
+                                text: '<i class="fas fa-print"></i> Print',
+                                className: 'dt-button-print'
+                            }
                         ],
                         language: {
-                            search: "Search all columns:",
-                            searchPlaceholder: "Type to search..."
-                        },
-                        initComplete: function() {
-                            // Add Tailwind classes to DataTables elements
-                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search services...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ services",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No services found"
                         }
                     });
                 },
@@ -736,22 +1069,46 @@
                         data: tableData,
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                        dom: 'Bfrtip',
+                        dom: '<"top"<"dt-buttons"B>lf>rt<"bottom"ip><"clear">',
                         buttons: [
-                            'copy', 'csv', 'excel', 'pdf', 'print'
-                        ],
-                        columnDefs: [
-                            { className: "text-sm", targets: "_all" }
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy'
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv'
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel'
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="fas fa-file-pdf"></i> PDF',
+                                className: 'dt-button-pdf'
+                            },
+                            {
+                                extend: 'print',
+                                text: '<i class="fas fa-print"></i> Print',
+                                className: 'dt-button-print'
+                            }
                         ],
                         language: {
-                            search: "Search all columns:",
-                            searchPlaceholder: "Type to search..."
-                        },
-                        initComplete: function() {
-                            // Add Tailwind classes to DataTables elements
-                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
-                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search service groups...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ service groups",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No service groups found"
                         }
                     });
                 },
