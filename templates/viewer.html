@@ -319,18 +319,69 @@
             background-color: #e0e7ff !important;
         }
         
-        /* Make tables responsive */
+        /* Make tables responsive with proper scrolling */
+        .dataTables_wrapper {
+            width: 100%;
+        }
+        
         .dataTables_scroll {
-            overflow: auto;
+            overflow: visible !important;
+        }
+        
+        .dataTables_scrollHead {
+            overflow: hidden !important;
         }
         
         .dataTables_scrollBody {
             overflow-x: auto !important;
+            overflow-y: visible !important;
         }
         
-        .dataTables_scrollHeadInner,
+        .dataTables_scrollHeadInner {
+            width: 100% !important;
+            padding-right: 0 !important;
+        }
+        
+        .dataTables_scrollHeadInner table,
         .dataTables_scrollBody table {
             width: 100% !important;
+            table-layout: fixed !important;
+        }
+        
+        /* Fix alignment between header and body */
+        .dataTables_scrollHeadInner table thead th,
+        .dataTables_scrollBody table tbody td {
+            box-sizing: border-box !important;
+        }
+        
+        /* Text overflow handling for table cells */
+        table.dataTable th,
+        table.dataTable td {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            vertical-align: top !important;
+            padding: 0.75rem !important;
+        }
+        
+        /* Specific rules for security policies table */
+        #securityPoliciesTable td {
+            max-width: 0;
+            line-height: 1.5;
+            min-height: 2.5rem;
+        }
+        
+        /* Handle comma-separated values */
+        #securityPoliciesTable td {
+            word-break: break-word;
+        }
+        
+        /* Ensure badges don't break */
+        #securityPoliciesTable td span {
+            display: inline-block;
+            white-space: nowrap;
+            margin: 0.125rem;
         }
         
         /* Compact pagination */
@@ -725,10 +776,12 @@
                     </div>
 
                     <!-- Security Policies DataTable -->
-                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
-                        <table id="securityPoliciesTable" class="display w-full">
+                    <div class="bg-white shadow-sm rounded-lg p-4">
+                        <div class="overflow-x-auto">
+                            <table id="securityPoliciesTable" class="display w-full">
                             <thead>
                                 <tr>
+                                    <th>Order</th>
                                     <th>Rule Name</th>
                                     <th>From Zone</th>
                                     <th>To Zone</th>
@@ -746,6 +799,7 @@
                             </thead>
                             <tbody></tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1278,12 +1332,18 @@
                     
                     // Transform data for DataTable
                     const tableData = this.currentData.map(rule => {
-                        const fromZones = Array.isArray(rule.from_) ? rule.from_.join(', ') : rule.from_ || 'any';
-                        const toZones = Array.isArray(rule.to) ? rule.to.join(', ') : rule.to || 'any';
-                        const sources = Array.isArray(rule.source) ? rule.source.join(', ') : rule.source || 'any';
-                        const destinations = Array.isArray(rule.destination) ? rule.destination.join(', ') : rule.destination || 'any';
-                        const applications = Array.isArray(rule.application) ? rule.application.join(', ') : rule.application || 'any';
-                        const services = Array.isArray(rule.service) ? rule.service.join(', ') : rule.service || 'any';
+                        // Helper function to format arrays with wrapping-friendly separators
+                        const formatArray = (arr) => {
+                            if (!arr || !Array.isArray(arr)) return arr || 'any';
+                            return arr.join(', ');
+                        };
+                        
+                        const fromZones = formatArray(rule.from_);
+                        const toZones = formatArray(rule.to);
+                        const sources = formatArray(rule.source);
+                        const destinations = formatArray(rule.destination);
+                        const applications = formatArray(rule.application);
+                        const services = formatArray(rule.service);
                         
                         const actionBadge = rule.action === 'allow' ? 
                             '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Allow</span>' :
@@ -1302,6 +1362,7 @@
                             '<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Shared</span>';
                         
                         return [
+                            rule.order,
                             rule.name,
                             fromZones,
                             toZones,
@@ -1327,8 +1388,12 @@
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
                         scrollX: true,
+                        scrollY: false,
+                        scrollCollapse: true,
                         colReorder: true,
                         autoWidth: false,
+                        fixedColumns: true,
+                        order: [[0, 'asc']], // Sort by Order column by default
                         buttons: [
                             {
                                 extend: 'colvis',
@@ -1378,15 +1443,20 @@
                             emptyTable: "No security policies found"
                         },
                         columnDefs: [
-                            { targets: [0], width: '15%' }, // Rule Name
-                            { targets: [1, 2], width: '8%' }, // Zones
-                            { targets: [3, 4], width: '12%' }, // Source/Dest
-                            { targets: [5, 6], width: '10%' }, // App/Service
-                            { targets: [7], width: '6%' }, // Action
-                            { targets: [8], width: '6%' }, // Profile
-                            { targets: [9], width: '10%' }, // Device Group
-                            { targets: [10, 11], width: '6%' }, // Type/Status
-                            { targets: [12], width: '5%' } // Actions
+                            { targets: [0], width: '60px', className: 'text-center' }, // Order
+                            { targets: [1], width: '200px' }, // Rule Name
+                            { targets: [2], width: '120px' }, // From Zone
+                            { targets: [3], width: '120px' }, // To Zone
+                            { targets: [4], width: '200px' }, // Source
+                            { targets: [5], width: '200px' }, // Destination
+                            { targets: [6], width: '150px' }, // Application
+                            { targets: [7], width: '150px' }, // Service
+                            { targets: [8], width: '80px', className: 'text-center' }, // Action
+                            { targets: [9], width: '80px', className: 'text-center' }, // Profile
+                            { targets: [10], width: '150px' }, // Device Group
+                            { targets: [11], width: '100px', className: 'text-center' }, // Type
+                            { targets: [12], width: '100px', className: 'text-center' }, // Status
+                            { targets: [13], width: '80px', className: 'text-center' } // Actions
                         ]
                     });
                     
@@ -1560,10 +1630,12 @@
                         const rulePromises = deviceGroups.map(dg => 
                             fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/rules`)
                                 .then(resp => resp.json())
-                                .then(rules => rules.map(rule => ({
+                                .then(rules => rules.map((rule, index) => ({
                                     ...rule,
                                     device_group: dg.name,
-                                    rule_type: rule.parent_device_group ? 'Device Group' : 'Shared'
+                                    rule_type: rule.parent_device_group ? 'Device Group' : 'Shared',
+                                    order: index + 1,
+                                    rulebase_location: `${dg.name} #${index + 1}`
                                 })))
                                 .catch(() => [])
                         );
