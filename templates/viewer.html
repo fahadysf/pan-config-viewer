@@ -606,8 +606,12 @@
                                        item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
                                        item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
                         
+                        const typeHtml = item.static ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Static</span>' :
+                                       item.dynamic ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Dynamic</span>' : '';
+                        
                         return [
                             item.name,
+                            typeHtml,
                             membersHtml,
                             location,
                             item.description || '-',
