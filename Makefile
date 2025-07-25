@@ -33,6 +33,9 @@ test: test-local  ## Run tests (alias for test-local)
 test-basic:  ## Run basic smoke tests (API must be running)
 	python tests/test_basic.py
 
+test-validate:  ## Run simple validation tests (API must be running)
+	python tests/test_simple_validation.py
+
 test-coverage:  ## Run tests with coverage report
 	pytest --cov=main --cov=parser --cov=models \
 	       --cov-report=term-missing \

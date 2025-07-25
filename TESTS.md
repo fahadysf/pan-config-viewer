@@ -195,6 +195,22 @@ The tests use these environment variables:
   - Default for API: `/config-files`
   - For testing: `tests/test_configs` or `config-files`
 
+## Quick Validation
+
+For a quick validation that the API is working correctly:
+
+```bash
+# With Docker running
+python tests/test_simple_validation.py
+```
+
+This will test:
+- Health check endpoint
+- Configuration listing
+- Address retrieval
+- Field format validation
+- Device group functionality
+
 ## Common Issues
 
 ### 1. Import Errors
@@ -223,6 +239,22 @@ ls -la config-files/
 # Solution: Fix file permissions
 chmod +r config-files/*.xml
 ```
+
+### 5. Test Config Path Issues
+The tests expect specific paths for configuration files:
+- Test configs: `tests/test_configs/test_panorama.xml`
+- Real config: `config-files/pan-bkp-202507151414.xml`
+
+When running with Docker, the API uses `/config-files` inside the container, which is mapped to `./config-files` on the host.
+
+### 6. Field Naming Convention
+The API returns field names in kebab-case format:
+- `parent-device-group` (not `parent_device_group`)
+- `parent-template` (not `parent_template`)
+- `parent-vsys` (not `parent_vsys`)
+- `ip-netmask` (not `ip_netmask`)
+
+Tests have been updated to expect this format.
 
 ## CI/CD Integration
 
