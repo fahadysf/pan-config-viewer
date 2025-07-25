@@ -14,6 +14,23 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- jQuery (required for DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <!-- DataTables CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.tailwindcss.min.css">
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.tailwindcss.min.js"></script>
+    
+    <!-- DataTables Buttons Extension -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    
     <!-- Custom styles -->
     <style>
         [x-cloak] { display: none !important; }
@@ -200,342 +217,89 @@
                         <p class="text-gray-600 mt-1">IP addresses, FQDNs, and ranges defined in the configuration</p>
                     </div>
 
-                    <!-- Search and Filter -->
-                    <div class="mb-4 flex gap-4">
-                        <input type="text" 
-                               x-model="searchTerm" 
-                               @input="filterData()"
-                               placeholder="Search addresses..."
-                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        
-                        <select x-model="filterLocation" @change="filterData()"
-                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">All Locations</option>
-                            <option value="shared">Shared</option>
-                            <option value="device-group">Device Group</option>
-                            <option value="template">Template</option>
-                        </select>
-                    </div>
-
-                    <!-- Data Table -->
-                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <!-- DataTable Container -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
+                        <table id="addressesTable" class="display w-full">
+                            <thead>
                                 <tr>
-                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Name
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('type')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Type
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'type'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'type' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'type' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('value')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Value
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'value'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'value' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'value' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Location
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Description
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Value</th>
+                                    <th>Location</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="item in filteredData" :key="item.name">
-                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="item['ip-netmask']" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">IP/Netmask</span>
-                                            <span x-show="item.fqdn" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">FQDN</span>
-                                            <span x-show="item['ip-range']" class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">IP Range</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-text="item['ip-netmask'] || item.fqdn || item['ip-range'] || '-'"></span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
-                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
-                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
-                        
-                        <!-- No Results -->
-                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
-                            No addresses found
-                        </div>
                     </div>
                 </div>
 
-                <!-- Other sections will be similar -->
+                <!-- Address Groups Section -->
                 <div x-show="activeSection === 'address-groups'">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Address Groups</h2>
                         <p class="text-gray-600 mt-1">Static and dynamic address groups</p>
                     </div>
 
-                    <!-- Search and Filter -->
-                    <div class="mb-4 flex gap-4">
-                        <input type="text" 
-                               x-model="searchTerm" 
-                               @input="filterData()"
-                               placeholder="Search address groups..."
-                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        
-                        <select x-model="filterLocation" @change="filterData()"
-                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">All Locations</option>
-                            <option value="shared">Shared</option>
-                            <option value="device-group">Device Group</option>
-                            <option value="template">Template</option>
-                        </select>
-                    </div>
-
-                    <!-- Address Groups Table -->
-                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <!-- DataTable Container -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
+                        <table id="addressGroupsTable" class="display w-full">
+                            <thead>
                                 <tr>
-                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Name
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('type')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Type
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'type'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'type' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'type' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('members')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Members
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'members'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'members' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'members' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Location
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Description
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Members</th>
+                                    <th>Location</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="item in filteredData" :key="item.name">
-                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="item.static && item.static.length > 0" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Static</span>
-                                            <span x-show="item.dynamic" class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">Dynamic</span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <div class="max-w-md">
-                                                <span x-show="item.static && item.static.length > 0" class="inline-flex flex-wrap gap-1">
-                                                    <template x-for="(member, index) in item.static.slice(0, 3)" :key="member">
-                                                        <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md" x-text="member"></span>
-                                                    </template>
-                                                    <span x-show="item.static.length > 3" class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">
-                                                        +<span x-text="item.static.length - 3"></span> more
-                                                    </span>
-                                                </span>
-                                                <span x-show="item.dynamic" class="text-xs text-gray-600" x-text="'Filter: ' + item.dynamic.filter"></span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
-                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
-                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
-                        
-                        <!-- No Results -->
-                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
-                            No address groups found
-                        </div>
                     </div>
                 </div>
 
+                <!-- Services Section -->
                 <div x-show="activeSection === 'services'">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Service Objects</h2>
                         <p class="text-gray-600 mt-1">TCP/UDP service definitions</p>
                     </div>
 
-                    <!-- Search and Filter -->
-                    <div class="mb-4 flex gap-4">
-                        <input type="text" 
-                               x-model="searchTerm" 
-                               @input="filterData()"
-                               placeholder="Search services..."
-                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        
-                        <select x-model="filterLocation" @change="filterData()"
-                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">All Locations</option>
-                            <option value="shared">Shared</option>
-                            <option value="device-group">Device Group</option>
-                            <option value="template">Template</option>
-                        </select>
-                    </div>
-
-                    <!-- Service Table -->
-                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <!-- DataTable Container -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
+                        <table id="servicesTable" class="display w-full">
+                            <thead>
                                 <tr>
-                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Name
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('protocol')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Protocol
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'protocol'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'protocol' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'protocol' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('port')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Port
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'port'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'port' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'port' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Location
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Description
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
+                                    <th>Name</th>
+                                    <th>Protocol</th>
+                                    <th>Port</th>
+                                    <th>Location</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="item in filteredData" :key="item.name">
-                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="item.protocol && item.protocol.tcp" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">TCP</span>
-                                            <span x-show="item.protocol && item.protocol.udp" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">UDP</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-text="getServicePort(item)"></span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
-                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
-                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
-                        
-                        <!-- No Results -->
-                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
-                            No services found
-                        </div>
+                    </div>
+                </div>
+
+                    <!-- Services DataTable -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
+                        <table id="servicesTable" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Protocol</th>
+                                    <th>Port</th>
+                                    <th>Location</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -546,104 +310,20 @@
                         <p class="text-gray-600 mt-1">Collections of service objects</p>
                     </div>
 
-                    <!-- Search and Filter -->
-                    <div class="mb-4 flex gap-4">
-                        <input type="text" 
-                               x-model="searchTerm" 
-                               @input="filterData()"
-                               placeholder="Search service groups..."
-                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        
-                        <select x-model="filterLocation" @change="filterData()"
-                                class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">All Locations</option>
-                            <option value="shared">Shared</option>
-                            <option value="device-group">Device Group</option>
-                            <option value="template">Template</option>
-                        </select>
-                    </div>
-
-                    <!-- Service Groups Table -->
-                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <!-- Service Groups DataTable -->
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden p-4">
+                        <table id="serviceGroupsTable" class="display" style="width:100%">
+                            <thead>
                                 <tr>
-                                    <th @click="sortBy('name')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Name
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'name'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'name' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'name' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('members')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Members
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'members'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'members' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'members' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('location')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Location
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'location'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'location' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'location' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
-                                    <th @click="sortBy('description')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
-                                        <div class="flex items-center">
-                                            Description
-                                            <span class="ml-2">
-                                                <i class="fas fa-sort" x-show="sortColumn !== 'description'"></i>
-                                                <i class="fas fa-sort-up" x-show="sortColumn === 'description' && sortDirection === 'asc'"></i>
-                                                <i class="fas fa-sort-down" x-show="sortColumn === 'description' && sortDirection === 'desc'"></i>
-                                            </span>
-                                        </div>
-                                    </th>
+                                    <th>Name</th>
+                                    <th>Members</th>
+                                    <th>Location</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="item in filteredData" :key="item.name">
-                                    <tr class="hover:bg-gray-50 cursor-pointer" @click="showDetail(item)">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.name"></td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <div class="max-w-md">
-                                                <span x-show="item.members && item.members.length > 0" class="inline-flex flex-wrap gap-1">
-                                                    <template x-for="(member, index) in item.members.slice(0, 4)" :key="member">
-                                                        <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md" x-text="member"></span>
-                                                    </template>
-                                                    <span x-show="item.members.length > 4" class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">
-                                                        +<span x-text="item.members.length - 4"></span> more
-                                                    </span>
-                                                </span>
-                                                <span x-show="!item.members || item.members.length === 0" class="text-gray-400">No members</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span x-show="!item['parent-device-group'] && !item['parent-template']" class="text-gray-400">Shared</span>
-                                            <span x-show="item['parent-device-group']" class="text-blue-600" x-text="'DG: ' + item['parent-device-group']"></span>
-                                            <span x-show="item['parent-template']" class="text-green-600" x-text="'Template: ' + item['parent-template']"></span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <span x-text="item.description || '-'" class="truncate block max-w-xs"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
-                        
-                        <!-- No Results -->
-                        <div x-show="filteredData.length === 0" class="text-center py-8 text-gray-500">
-                            No service groups found
-                        </div>
                     </div>
                 </div>
 
@@ -724,14 +404,9 @@
                 showSecurityProfiles: false,
                 currentData: [],
                 filteredData: [],
-                searchTerm: '',
-                filterLocation: '',
                 showDetailModal: false,
                 detailItem: {},
                 
-                // Sorting state
-                sortColumn: '',
-                sortDirection: 'asc', // 'asc' or 'desc'
                 
                 // Statistics
                 stats: {
@@ -841,14 +516,240 @@
                         );
                         
                         this.currentData = uniqueAddresses;
-                        this.filteredData = [...this.currentData];
                         this.stats.addresses = this.currentData.length;
-                        this.filterData();
+                        
+                        // Initialize or update DataTable
+                        this.initAddressesDataTable();
                     } catch (error) {
                         console.error('Failed to load addresses:', error);
                     } finally {
                         this.loading = false;
                     }
+                },
+                
+                initAddressesDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#addressesTable')) {
+                        $('#addressesTable').DataTable().destroy();
+                    }
+                    
+                    // Transform data for DataTable
+                    const tableData = this.currentData.map(item => {
+                        const type = this.getAddressType(item);
+                        const typeHtml = type === 'ip-netmask' ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">IP/Netmask</span>' :
+                                        type === 'fqdn' ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">FQDN</span>' :
+                                        type === 'ip-range' ? '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">IP Range</span>' : '';
+                        
+                        const value = item['ip-netmask'] || item.fqdn || item['ip-range'] || '-';
+                        
+                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                        
+                        return [
+                            item.name,
+                            typeHtml,
+                            value,
+                            location,
+                            item.description || '-',
+                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-eye"></i> View
+                            </button>`
+                        ];
+                    });
+                    
+                    // Initialize DataTable with features
+                    $('#addressesTable').DataTable({
+                        data: tableData,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Bfrtip',
+                        buttons: [
+                            'copy', 'csv', 'excel', 'pdf', 'print'
+                        ],
+                        columnDefs: [
+                            { className: "text-sm", targets: "_all" }
+                        ],
+                        language: {
+                            search: "Search all columns:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        initComplete: function() {
+                            // Add Tailwind classes to DataTables elements
+                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                        }
+                    });
+                    
+                    // Make component available globally for onclick handlers
+                    window.configViewer = this;
+                },
+                
+                initAddressGroupsDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#addressGroupsTable')) {
+                        $('#addressGroupsTable').DataTable().destroy();
+                    }
+                    
+                    // Transform data for DataTable
+                    const tableData = this.currentData.map(item => {
+                        const members = item.members || [];
+                        const membersHtml = members.length > 0 
+                            ? `<div class="max-w-md inline-flex flex-wrap gap-1">
+                                ${members.slice(0, 4).map(m => `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">${m}</span>`).join('')}
+                                ${members.length > 4 ? `<span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">+${members.length - 4} more</span>` : ''}
+                               </div>`
+                            : '<span class="text-gray-400">No members</span>';
+                        
+                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                        
+                        return [
+                            item.name,
+                            membersHtml,
+                            location,
+                            item.description || '-',
+                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-eye"></i> View
+                            </button>`
+                        ];
+                    });
+                    
+                    // Initialize DataTable
+                    $('#addressGroupsTable').DataTable({
+                        data: tableData,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Bfrtip',
+                        buttons: [
+                            'copy', 'csv', 'excel', 'pdf', 'print'
+                        ],
+                        columnDefs: [
+                            { className: "text-sm", targets: "_all" }
+                        ],
+                        language: {
+                            search: "Search all columns:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        initComplete: function() {
+                            // Add Tailwind classes to DataTables elements
+                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                        }
+                    });
+                },
+                
+                initServicesDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#servicesTable')) {
+                        $('#servicesTable').DataTable().destroy();
+                    }
+                    
+                    // Transform data for DataTable
+                    const tableData = this.currentData.map(item => {
+                        const protocolHtml = (item.protocol && item.protocol.tcp ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">TCP</span> ' : '') +
+                                           (item.protocol && item.protocol.udp ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">UDP</span>' : '');
+                        
+                        const port = this.getServicePort(item);
+                        
+                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                        
+                        return [
+                            item.name,
+                            protocolHtml,
+                            port,
+                            location,
+                            item.description || '-',
+                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-eye"></i> View
+                            </button>`
+                        ];
+                    });
+                    
+                    // Initialize DataTable
+                    $('#servicesTable').DataTable({
+                        data: tableData,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Bfrtip',
+                        buttons: [
+                            'copy', 'csv', 'excel', 'pdf', 'print'
+                        ],
+                        columnDefs: [
+                            { className: "text-sm", targets: "_all" }
+                        ],
+                        language: {
+                            search: "Search all columns:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        initComplete: function() {
+                            // Add Tailwind classes to DataTables elements
+                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                        }
+                    });
+                },
+                
+                initServiceGroupsDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#serviceGroupsTable')) {
+                        $('#serviceGroupsTable').DataTable().destroy();
+                    }
+                    
+                    // Transform data for DataTable
+                    const tableData = this.currentData.map(item => {
+                        const members = item.members || [];
+                        const membersHtml = members.length > 0 
+                            ? `<div class="max-w-md inline-flex flex-wrap gap-1">
+                                ${members.slice(0, 4).map(m => `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">${m}</span>`).join('')}
+                                ${members.length > 4 ? `<span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">+${members.length - 4} more</span>` : ''}
+                               </div>`
+                            : '<span class="text-gray-400">No members</span>';
+                        
+                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                        
+                        return [
+                            item.name,
+                            membersHtml,
+                            location,
+                            item.description || '-',
+                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-eye"></i> View
+                            </button>`
+                        ];
+                    });
+                    
+                    // Initialize DataTable
+                    $('#serviceGroupsTable').DataTable({
+                        data: tableData,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Bfrtip',
+                        buttons: [
+                            'copy', 'csv', 'excel', 'pdf', 'print'
+                        ],
+                        columnDefs: [
+                            { className: "text-sm", targets: "_all" }
+                        ],
+                        language: {
+                            search: "Search all columns:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        initComplete: function() {
+                            // Add Tailwind classes to DataTables elements
+                            $('.dataTables_filter input').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dataTables_length select').addClass('px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500');
+                            $('.dt-buttons button').addClass('px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md mr-2 text-sm');
+                        }
+                    });
                 },
                 
                 async loadAddressGroups() {
@@ -885,6 +786,7 @@
                         this.currentData = uniqueGroups;
                         this.filteredData = [...this.currentData];
                         this.stats.addressGroups = this.currentData.length;
+                        this.initAddressGroupsDataTable();
                     } catch (error) {
                         console.error('Failed to load address groups:', error);
                     } finally {
@@ -926,6 +828,7 @@
                         this.currentData = uniqueServices;
                         this.filteredData = [...this.currentData];
                         this.stats.services = this.currentData.length;
+                        this.initServicesDataTable();
                     } catch (error) {
                         console.error('Failed to load services:', error);
                     } finally {
@@ -967,6 +870,7 @@
                         this.currentData = uniqueGroups;
                         this.filteredData = [...this.currentData];
                         this.stats.serviceGroups = this.currentData.length;
+                        this.initServiceGroupsDataTable();
                     } catch (error) {
                         console.error('Failed to load service groups:', error);
                     } finally {
@@ -1018,112 +922,6 @@
                     this.showSecurityProfiles = !this.showSecurityProfiles;
                 },
                 
-                filterData() {
-                    // First filter the data
-                    let filtered = this.currentData.filter(item => {
-                        // Search filter
-                        if (this.searchTerm && !item.name.toLowerCase().includes(this.searchTerm.toLowerCase())) {
-                            return false;
-                        }
-                        
-                        // Location filter
-                        if (this.filterLocation) {
-                            if (this.filterLocation === 'shared' && (item['parent-device-group'] || item['parent-template'])) {
-                                return false;
-                            }
-                            if (this.filterLocation === 'device-group' && !item['parent-device-group']) {
-                                return false;
-                            }
-                            if (this.filterLocation === 'template' && !item['parent-template']) {
-                                return false;
-                            }
-                        }
-                        
-                        return true;
-                    });
-                    
-                    // Then apply sorting
-                    if (this.sortColumn) {
-                        filtered = this.sortData(filtered);
-                    }
-                    
-                    this.filteredData = filtered;
-                },
-                
-                sortBy(column) {
-                    if (this.sortColumn === column) {
-                        // Toggle direction if clicking same column
-                        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        // New column, default to ascending
-                        this.sortColumn = column;
-                        this.sortDirection = 'asc';
-                    }
-                    this.filterData();
-                },
-                
-                sortData(data) {
-                    return [...data].sort((a, b) => {
-                        let aVal, bVal;
-                        
-                        switch (this.sortColumn) {
-                            case 'name':
-                                aVal = a.name || '';
-                                bVal = b.name || '';
-                                break;
-                            case 'type':
-                                // Handle both address types and group types
-                                if (this.activeSection === 'addresses') {
-                                    aVal = this.getAddressType(a);
-                                    bVal = this.getAddressType(b);
-                                } else if (this.activeSection === 'address-groups') {
-                                    aVal = this.getAddressGroupType(a);
-                                    bVal = this.getAddressGroupType(b);
-                                } else {
-                                    aVal = '';
-                                    bVal = '';
-                                }
-                                break;
-                            case 'value':
-                                aVal = a['ip-netmask'] || a.fqdn || a['ip-range'] || '';
-                                bVal = b['ip-netmask'] || b.fqdn || b['ip-range'] || '';
-                                break;
-                            case 'protocol':
-                                aVal = this.getServiceProtocol(a);
-                                bVal = this.getServiceProtocol(b);
-                                break;
-                            case 'port':
-                                aVal = this.getServicePortNumber(a);
-                                bVal = this.getServicePortNumber(b);
-                                break;
-                            case 'members':
-                                aVal = this.getMemberCount(a);
-                                bVal = this.getMemberCount(b);
-                                break;
-                            case 'location':
-                                aVal = this.getLocationString(a);
-                                bVal = this.getLocationString(b);
-                                break;
-                            case 'description':
-                                aVal = a.description || '';
-                                bVal = b.description || '';
-                                break;
-                            default:
-                                aVal = '';
-                                bVal = '';
-                        }
-                        
-                        // Convert to lowercase for case-insensitive sorting (except for numbers)
-                        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-                        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-                        
-                        if (this.sortDirection === 'asc') {
-                            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                        } else {
-                            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-                        }
-                    });
-                },
                 
                 getAddressType(item) {
                     if (item['ip-netmask']) return 'ip-netmask';
@@ -1132,20 +930,6 @@
                     return '';
                 },
                 
-                getLocationString(item) {
-                    if (item['parent-device-group']) return `dg:${item['parent-device-group']}`;
-                    if (item['parent-template']) return `template:${item['parent-template']}`;
-                    return 'shared';
-                },
-                
-                getServiceProtocol(item) {
-                    if (item.protocol) {
-                        if (item.protocol.tcp && item.protocol.udp) return 'tcp/udp';
-                        if (item.protocol.tcp) return 'tcp';
-                        if (item.protocol.udp) return 'udp';
-                    }
-                    return '';
-                },
                 
                 getServicePort(item) {
                     if (item.protocol) {
@@ -1159,31 +943,7 @@
                     return '-';
                 },
                 
-                getServicePortNumber(item) {
-                    const port = this.getServicePort(item);
-                    if (port === '-') return 0;
-                    // Extract first number for sorting (handles ranges like "80-90")
-                    const match = port.match(/\d+/);
-                    return match ? parseInt(match[0]) : 0;
-                },
                 
-                getMemberCount(item) {
-                    // For address groups
-                    if (item.static && item.static.length > 0) {
-                        return item.static.length;
-                    }
-                    // For service groups
-                    if (item.members && item.members.length > 0) {
-                        return item.members.length;
-                    }
-                    return 0;
-                },
-                
-                getAddressGroupType(item) {
-                    if (item.static && item.static.length > 0) return 'static';
-                    if (item.dynamic) return 'dynamic';
-                    return '';
-                },
                 
                 showDetail(item) {
                     this.detailItem = item;
