@@ -2,8 +2,8 @@
 
 set +e  # Continue on error
 
-echo "🚀 PAN-OS Configuration API Test Runner (Graceful Mode)"
-echo "======================================================"
+echo "🚀 PAN-OS Configuration API Test Runner (Full Mode)"
+echo "===================================================="
 
 # Function to cleanup
 cleanup() {

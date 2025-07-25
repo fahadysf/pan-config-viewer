@@ -277,8 +277,8 @@ make test
 # Run tests with Docker
 make test-docker
 
-# Run tests with graceful error handling
-make test-graceful
+# Run full test suite with error handling
+make test-full
 
 # Run tests with coverage
 make test-coverage
@@ -292,8 +292,8 @@ Using test scripts directly:
 # Run all tests with Docker (starts API automatically)
 ./run_tests.sh
 
-# Run tests with graceful error handling (continues on failures)
-./run_tests_graceful.sh
+# Run full test suite (continues on failures)
+./run_tests_full.sh
 
 # Run tests locally without Docker
 ./run_tests_local.sh

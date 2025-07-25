@@ -33,12 +33,12 @@ chmod +x run_tests.sh
 # Run all tests (this will start the API, run tests, then stop)
 ./run_tests.sh
 
-# For graceful test execution that continues even if some tests fail:
-chmod +x run_tests_graceful.sh
-./run_tests_graceful.sh
+# For full test execution that continues even if some tests fail:
+chmod +x run_tests_full.sh
+./run_tests_full.sh
 ```
 
-The graceful test runner will:
+The full test runner will:
 - Continue running all test suites even if some fail
 - Provide a summary of passed/failed tests
 - Always generate coverage reports

@@ -25,8 +25,8 @@ test-local:  ## Run tests locally (no Docker)
 test-docker:  ## Run tests with Docker
 	./run_tests.sh
 
-test-graceful:  ## Run tests with graceful error handling
-	./run_tests_graceful.sh
+test-full:  ## Run full test suite with error handling
+	./run_tests_full.sh
 
 test: test-local  ## Run tests (alias for test-local)
 
