@@ -1250,6 +1250,9 @@
                         ];
                     });
                     
+                    // Make component available globally for onclick handlers
+                    window.configViewer = this;
+                    
                     // Initialize DataTable with features
                     $('#addressesTable').DataTable({
                         data: tableData,
@@ -1308,14 +1311,14 @@
                         },
                         initComplete: function () {
                             var api = this.api();
+                            var self = window.configViewer || this;
                             
                             // Add enhanced column filters (skip Actions column at index 5)
-                            window.configViewer.addEnhancedColumnFilters(api, [5]);
+                            if (self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [5]);
+                            }
                         }
                     });
-                    
-                    // Make component available globally for onclick handlers
-                    window.configViewer = this;
                 },
                 
                 initAddressGroupsDataTable() {
@@ -1411,9 +1414,12 @@
                         },
                         initComplete: function () {
                             var api = this.api();
+                            var self = window.configViewer || this;
                             
                             // Add enhanced column filters (skip Actions column at index 5)
-                            window.configViewer.addEnhancedColumnFilters(api, [5]);
+                            if (self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [5]);
+                            }
                         }
                     });
                 },
@@ -1505,9 +1511,12 @@
                         },
                         initComplete: function () {
                             var api = this.api();
+                            var self = window.configViewer || this;
                             
                             // Add enhanced column filters (skip Actions column at index 5)
-                            window.configViewer.addEnhancedColumnFilters(api, [5]);
+                            if (self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [5]);
+                            }
                         }
                     });
                 },
@@ -1600,9 +1609,12 @@
                         },
                         initComplete: function () {
                             var api = this.api();
+                            var self = window.configViewer || this;
                             
                             // Add enhanced column filters (skip Actions column at index 4)
-                            window.configViewer.addEnhancedColumnFilters(api, [4]);
+                            if (self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [4]);
+                            }
                         }
                     });
                 },
@@ -1744,9 +1756,12 @@
                         ],
                         initComplete: function () {
                             var api = this.api();
+                            var self = window.configViewer || this;
                             
                             // Add enhanced column filters (skip Order and Actions columns)
-                            window.configViewer.addEnhancedColumnFilters(api, [0, 13]);
+                            if (self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [0, 13]);
+                            }
                         }
                     });
                     
