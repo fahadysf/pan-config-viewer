@@ -1,0 +1,103 @@
+# PAN-OS Configuration Viewer - Claude Context
+
+## Project Overview
+This is a Python/FastAPI application that explores Panorama PAN-OS XML configuration files via REST API with a web-based viewer.
+
+## Current Branch
+- Working on: feature/config-viewer
+- Main functionality implemented and working
+
+## Key Components
+
+### Backend (FastAPI)
+- **main.py**: Core API with endpoints for addresses, services, device groups, templates, etc.
+- **models.py**: Pydantic models with ConfigLocation base class for XPath tracking
+- **parser.py**: XML parser using lxml for extracting configuration objects
+- **Docker**: Containerized with volume mount at /config-files
+
+### Frontend (/viewer)
+- **Alpine.js**: Reactive framework for UI interactions
+- **DataTables**: All tables converted to use DataTables library with:
+  - Search functionality
+  - Export buttons (CSV, Excel, PDF, etc.)
+  - Column reordering
+  - Pagination
+  - Compact styling
+
+## Recent Work Completed
+1. Created comprehensive web viewer at /viewer endpoint
+2. Implemented DataTables for all object tables:
+   - Address Objects
+   - Address Groups
+   - Services
+   - Service Groups
+3. Added shared location endpoints for objects not in device groups
+4. Styled DataTables to match original Tailwind design
+5. Made header more compact and added column features
+6. Fixed duplicate table bug in wrong sections
+7. Fixed DataTables column mismatch error for address groups
+
+## API Endpoints Structure
+- `/api/v1/configs` - List available configurations
+- `/api/v1/configs/{name}/addresses` - Get all addresses (shared + device groups)
+- `/api/v1/configs/{name}/shared/addresses` - Get only shared addresses
+- `/api/v1/configs/{name}/device-groups/{group}/addresses` - Get device group specific addresses
+- Similar patterns for services, address-groups, service-groups
+
+## Important Technical Details
+- All objects include XPath and parent context (device-group, template, or vsys)
+- Field names use kebab-case in API responses (e.g., "parent-device-group")
+- Docker container runs on port 8000
+- Config XML files go in ./config-files directory
+- Secrets in XML are redacted with "---REDACTED---"
+
+## DataTables Implementation
+- Uses jQuery DataTables v1.13.7
+- Custom CSS styling to match Tailwind design
+- Buttons extension for export functionality
+- ColReorder extension for column drag-and-drop
+- Each table type has custom language settings
+
+## Testing
+- HTTP-based tests in tests/ directory work with Docker
+- Run with: `docker exec pan-config-viewer python -m pytest tests/`
+- Config file for tests: tests/test_configs/test_panorama.xml
+
+## Git Ignore
+- claude-context.txt is in .gitignore
+- No secrets committed to repository
+
+## Next Steps/Areas for Enhancement
+- Could add more object types (zones, applications, etc.)
+- Could implement search across all object types
+- Could add object dependency visualization
+- Could implement configuration comparison between files
+
+## Useful Commands
+```bash
+# Build and run
+docker compose -f docker-compose.yml up --build -d
+
+# View logs
+docker logs pan-config-viewer
+
+# Run tests
+docker exec pan-config-viewer python -m pytest tests/
+
+# Access viewer
+http://localhost:8000/viewer
+
+# Access API docs
+http://localhost:8000/docs
+```
+
+## Known Issues
+- DataTables doesn't have built-in column width resizing (only reordering)
+- Large configurations may take time to load initially
+
+## File Locations
+- Main viewer HTML: templates/viewer.html
+- API implementation: main.py
+- Models: models.py
+- Parser: parser.py
+- Requirements: requirements.txt
