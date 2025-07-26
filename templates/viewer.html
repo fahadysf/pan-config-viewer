@@ -451,6 +451,7 @@
             padding: 5px;
             background-color: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
+            position: relative;
         }
         
         .column-filter-select {
@@ -467,6 +468,179 @@
             outline-offset: 2px;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Enhanced column filter dropdown */
+        .column-filter-container {
+            position: relative;
+            width: 100%;
+        }
+        
+        .column-filter-button {
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            color: #374151;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease-in-out;
+        }
+        
+        .column-filter-button:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .column-filter-button:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .column-filter-button.active {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+        }
+        
+        .column-filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 0.75rem;
+            margin-top: 0.25rem;
+            min-width: 250px;
+            display: none;
+        }
+        
+        .column-filter-dropdown.show {
+            display: block;
+        }
+        
+        .filter-operator-select {
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            margin-bottom: 0.75rem;
+        }
+        
+        .filter-operator-select:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .filter-search-input {
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            margin-bottom: 0.75rem;
+        }
+        
+        .filter-search-input:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 0.75rem;
+        }
+        
+        .filter-action-btn {
+            flex: 1;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            text-align: center;
+        }
+        
+        .filter-action-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        
+        .filter-action-btn.primary {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .filter-action-btn.primary:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .filter-sort-section {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        
+        .filter-sort-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .filter-sort-buttons {
+            display: flex;
+            gap: 0.375rem;
+        }
+        
+        .filter-sort-btn {
+            flex: 1;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            background-color: white;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            text-align: center;
+        }
+        
+        .filter-sort-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        
+        .filter-sort-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
         }
         
         table.dataTable thead .sorting:before,
@@ -1135,43 +1309,8 @@
                         initComplete: function () {
                             var api = this.api();
                             
-                            // Add filters to specific columns (skip Actions column)
-                            $('.column-filter-row th', api.table().header()).each(function (index) {
-                                // Skip the Actions column (index 5)
-                                if (index === 5) return;
-                                
-                                var column = api.column(index);
-                                var select = $('<select class="column-filter-select"><option value="">All</option></select>')
-                                    .appendTo($(this))
-                                    .on('change', function () {
-                                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                        
-                                        // For columns with HTML content, extract text
-                                        if (index === 1 || index === 3) { // Type and Location columns
-                                            column.search(val ? val : '', true, false).draw();
-                                        } else {
-                                            column.search(val ? '^' + val + '$' : '', true, false).draw();
-                                        }
-                                    })
-                                    .on('click', function(e) {
-                                        e.stopPropagation(); // Prevent sorting when clicking dropdown
-                                    });
-                                
-                                // Populate dropdown with unique values
-                                column.data().unique().sort().each(function (d, j) {
-                                    // Extract text from HTML for Type and Location columns
-                                    var text = d;
-                                    if (index === 1 || index === 3) {
-                                        var tempDiv = document.createElement('div');
-                                        tempDiv.innerHTML = d;
-                                        text = tempDiv.textContent || tempDiv.innerText || d;
-                                    }
-                                    
-                                    if (text && text !== '-') {
-                                        select.append('<option value="' + text + '">' + text + '</option>');
-                                    }
-                                });
-                            });
+                            // Add enhanced column filters (skip Actions column at index 5)
+                            window.configViewer.addEnhancedColumnFilters(api, [5]);
                         }
                     });
                     
@@ -1273,46 +1412,8 @@
                         initComplete: function () {
                             var api = this.api();
                             
-                            // Add filters to specific columns (skip Actions column)
-                            $('.column-filter-row th', api.table().header()).each(function (index) {
-                                // Skip the Actions column (index 5)
-                                if (index === 5) return;
-                                
-                                var column = api.column(index);
-                                var select = $('<select class="column-filter-select"><option value="">All</option></select>')
-                                    .appendTo($(this))
-                                    .on('change', function () {
-                                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                        
-                                        // For columns with HTML content, extract text
-                                        if (index === 1 || index === 3) { // Type and Location columns
-                                            column.search(val ? val : '', true, false).draw();
-                                        } else {
-                                            column.search(val ? '^' + val + '$' : '', true, false).draw();
-                                        }
-                                    })
-                                    .on('click', function(e) {
-                                        e.stopPropagation(); // Prevent sorting when clicking dropdown
-                                    });
-                                
-                                // Populate dropdown with unique values
-                                column.data().unique().sort().each(function (d, j) {
-                                    // Extract text from HTML for Type and Location columns
-                                    var text = d;
-                                    if (index === 1 || index === 3) {
-                                        var tempDiv = document.createElement('div');
-                                        tempDiv.innerHTML = d;
-                                        text = tempDiv.textContent || tempDiv.innerText || d;
-                                    }
-                                    
-                                    // Skip Members column as it's complex HTML
-                                    if (index === 2) return;
-                                    
-                                    if (text && text !== '-') {
-                                        select.append('<option value="' + text + '">' + text + '</option>');
-                                    }
-                                });
-                            });
+                            // Add enhanced column filters (skip Actions column at index 5)
+                            window.configViewer.addEnhancedColumnFilters(api, [5]);
                         }
                     });
                 },
@@ -1405,43 +1506,8 @@
                         initComplete: function () {
                             var api = this.api();
                             
-                            // Add filters to specific columns (skip Actions column)
-                            $('.column-filter-row th', api.table().header()).each(function (index) {
-                                // Skip the Actions column (index 5)
-                                if (index === 5) return;
-                                
-                                var column = api.column(index);
-                                var select = $('<select class="column-filter-select"><option value="">All</option></select>')
-                                    .appendTo($(this))
-                                    .on('change', function () {
-                                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                        
-                                        // For columns with HTML content, extract text
-                                        if (index === 1 || index === 3) { // Protocol and Location columns
-                                            column.search(val ? val : '', true, false).draw();
-                                        } else {
-                                            column.search(val ? '^' + val + '$' : '', true, false).draw();
-                                        }
-                                    })
-                                    .on('click', function(e) {
-                                        e.stopPropagation(); // Prevent sorting when clicking dropdown
-                                    });
-                                
-                                // Populate dropdown with unique values
-                                column.data().unique().sort().each(function (d, j) {
-                                    // Extract text from HTML for Protocol and Location columns
-                                    var text = d;
-                                    if (index === 1 || index === 3) {
-                                        var tempDiv = document.createElement('div');
-                                        tempDiv.innerHTML = d;
-                                        text = tempDiv.textContent || tempDiv.innerText || d;
-                                    }
-                                    
-                                    if (text && text !== '-') {
-                                        select.append('<option value="' + text + '">' + text + '</option>');
-                                    }
-                                });
-                            });
+                            // Add enhanced column filters (skip Actions column at index 5)
+                            window.configViewer.addEnhancedColumnFilters(api, [5]);
                         }
                     });
                 },
@@ -1531,6 +1597,12 @@
                                 previous: "Previous"
                             },
                             emptyTable: "No service groups found"
+                        },
+                        initComplete: function () {
+                            var api = this.api();
+                            
+                            // Add enhanced column filters (skip Actions column at index 4)
+                            window.configViewer.addEnhancedColumnFilters(api, [4]);
                         }
                     });
                 },
@@ -1673,57 +1745,8 @@
                         initComplete: function () {
                             var api = this.api();
                             
-                            // Add filters to specific columns
-                            $('.column-filter-row th', api.table().header()).each(function (index) {
-                                // Skip Order and Actions columns
-                                if (index === 0 || index === 13) return;
-                                
-                                var column = api.column(index);
-                                var select = $('<select class="column-filter-select"><option value="">All</option></select>')
-                                    .appendTo($(this))
-                                    .on('change', function () {
-                                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                        
-                                        // For columns with HTML content, extract text
-                                        if (index === 8 || index === 11 || index === 12) { // Action, Type, Status columns
-                                            column.search(val ? val : '', true, false).draw();
-                                        } else {
-                                            column.search(val ? '^' + val + '$' : '', true, false).draw();
-                                        }
-                                    })
-                                    .on('click', function(e) {
-                                        e.stopPropagation(); // Prevent sorting when clicking dropdown
-                                    });
-                                
-                                // Populate dropdown with unique values
-                                column.data().unique().sort().each(function (d, j) {
-                                    // Extract text from HTML for badge columns
-                                    var text = d;
-                                    if (index === 8 || index === 11 || index === 12) {
-                                        var tempDiv = document.createElement('div');
-                                        tempDiv.innerHTML = d;
-                                        text = tempDiv.textContent || tempDiv.innerText || d;
-                                    }
-                                    
-                                    // For array columns, don't add dropdown
-                                    if (index >= 2 && index <= 7) {
-                                        // For From Zone, To Zone, Source, Destination, Application, Service
-                                        // These are comma-separated lists, handle differently
-                                        var values = text.split(', ');
-                                        values.forEach(function(v) {
-                                            v = v.trim();
-                                            if (v && v !== '-' && v !== 'any' && select.find('option[value="' + v + '"]').length === 0) {
-                                                select.append('<option value="' + v + '">' + v + '</option>');
-                                            }
-                                        });
-                                        return; // Skip to next iteration
-                                    }
-                                    
-                                    if (text && text !== '-') {
-                                        select.append('<option value="' + text + '">' + text + '</option>');
-                                    }
-                                });
-                            });
+                            // Add enhanced column filters (skip Order and Actions columns)
+                            window.configViewer.addEnhancedColumnFilters(api, [0, 13]);
                         }
                     });
                     
@@ -1973,6 +1996,161 @@
                 showDeviceGroupDetail(dg) {
                     this.detailItem = dg;
                     this.showDetailModal = true;
+                },
+                
+                // Build regex for different filter operators
+                buildFilterRegex(operator, value) {
+                    if (!value && operator !== 'empty' && operator !== 'not_empty') {
+                        return '';
+                    }
+                    
+                    // Escape special regex characters
+                    var escapedValue = value ? value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+                    
+                    switch (operator) {
+                        case 'contains':
+                            return escapedValue;
+                        case 'not_contains':
+                            return '^(?!.*' + escapedValue + ').*$';
+                        case 'equals':
+                            return '^' + escapedValue + '$';
+                        case 'not_equals':
+                            return '^(?!' + escapedValue + '$).*$';
+                        case 'starts':
+                            return '^' + escapedValue;
+                        case 'ends':
+                            return escapedValue + '$';
+                        case 'empty':
+                            return '^$|^-$|^\\s*$';
+                        case 'not_empty':
+                            return '^(?!$|^-$|^\\s*$).*$';
+                        default:
+                            return escapedValue;
+                    }
+                },
+                
+                // Helper function to add enhanced column filters
+                addEnhancedColumnFilters(api, skipColumns = []) {
+                    $('.column-filter-row th', api.table().header()).each(function (index) {
+                        // Skip specified columns
+                        if (skipColumns.includes(index)) return;
+                        
+                        var column = api.column(index);
+                        var $th = $(this);
+                        
+                        // Create enhanced filter container
+                        var filterContainer = $('<div class="column-filter-container"></div>');
+                        var filterButton = $('<button class="column-filter-button" type="button">' +
+                            '<span class="filter-text">All</span>' +
+                            '<i class="fas fa-chevron-down"></i>' +
+                            '</button>');
+                        
+                        var dropdown = $('<div class="column-filter-dropdown">' +
+                            '<select class="filter-operator-select">' +
+                                '<option value="contains">Contains</option>' +
+                                '<option value="not_contains">Does not contain</option>' +
+                                '<option value="equals">Equals</option>' +
+                                '<option value="not_equals">Does not equal</option>' +
+                                '<option value="starts">Starts with</option>' +
+                                '<option value="ends">Ends with</option>' +
+                                '<option value="empty">Empty</option>' +
+                                '<option value="not_empty">Not empty</option>' +
+                            '</select>' +
+                            '<input type="text" class="filter-search-input" placeholder="Enter filter value...">' +
+                            '<div class="filter-sort-section">' +
+                                '<span class="filter-sort-label">Sort</span>' +
+                                '<div class="filter-sort-buttons">' +
+                                    '<button type="button" class="filter-sort-btn" data-sort="asc">' +
+                                        '<i class="fas fa-sort-alpha-down"></i> Asc' +
+                                    '</button>' +
+                                    '<button type="button" class="filter-sort-btn" data-sort="desc">' +
+                                        '<i class="fas fa-sort-alpha-up"></i> Desc' +
+                                    '</button>' +
+                                    '<button type="button" class="filter-sort-btn" data-sort="clear">' +
+                                        '<i class="fas fa-times"></i> Clear' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="filter-actions">' +
+                                '<button type="button" class="filter-action-btn primary apply-filter">Apply</button>' +
+                                '<button type="button" class="filter-action-btn clear-filter">Clear</button>' +
+                            '</div>' +
+                            '</div>');
+                        
+                        filterContainer.append(filterButton).append(dropdown);
+                        $th.append(filterContainer);
+                        
+                        // Toggle dropdown
+                        filterButton.on('click', function(e) {
+                            e.stopPropagation();
+                            
+                            // Close other dropdowns
+                            $('.column-filter-dropdown').removeClass('show');
+                            $('.column-filter-button').removeClass('active');
+                            
+                            // Toggle current dropdown
+                            dropdown.toggleClass('show');
+                            filterButton.toggleClass('active');
+                        });
+                        
+                        // Apply filter
+                        dropdown.find('.apply-filter').on('click', function() {
+                            var operator = dropdown.find('.filter-operator-select').val();
+                            var value = dropdown.find('.filter-search-input').val();
+                            
+                            if (value || operator === 'empty' || operator === 'not_empty') {
+                                var searchRegex = window.configViewer.buildFilterRegex(operator, value);
+                                column.search(searchRegex, true, false).draw();
+                                
+                                // Update button text
+                                var buttonText = value ? (operator + ': ' + value) : operator;
+                                filterButton.find('.filter-text').text(buttonText);
+                                filterButton.addClass('active');
+                            }
+                            
+                            dropdown.removeClass('show');
+                            filterButton.removeClass('active');
+                        });
+                        
+                        // Clear filter
+                        dropdown.find('.clear-filter').on('click', function() {
+                            column.search('').draw();
+                            dropdown.find('.filter-search-input').val('');
+                            dropdown.find('.filter-operator-select').val('contains');
+                            filterButton.find('.filter-text').text('All');
+                            filterButton.removeClass('active');
+                            dropdown.removeClass('show');
+                        });
+                        
+                        // Sort buttons
+                        dropdown.find('.filter-sort-btn').on('click', function() {
+                            var sortType = $(this).data('sort');
+                            
+                            dropdown.find('.filter-sort-btn').removeClass('active');
+                            
+                            if (sortType === 'clear') {
+                                column.order('');
+                            } else {
+                                $(this).addClass('active');
+                                column.order(sortType);
+                            }
+                            
+                            api.draw();
+                            dropdown.removeClass('show');
+                            filterButton.removeClass('active');
+                        });
+                        
+                        // Prevent dropdown close when clicking inside
+                        dropdown.on('click', function(e) {
+                            e.stopPropagation();
+                        });
+                    });
+                    
+                    // Close dropdowns when clicking outside
+                    $(document).on('click', function() {
+                        $('.column-filter-dropdown').removeClass('show');
+                        $('.column-filter-button').removeClass('active');
+                    });
                 }
             }
         }
