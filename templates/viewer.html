@@ -1366,8 +1366,9 @@
                         ];
                     });
                     
-                    // Make component available globally for onclick handlers
-                    window.configViewer = this;
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
                     
                     // Initialize DataTable with features
                     $('#addressesTable').DataTable({
@@ -1427,13 +1428,10 @@
                         },
                         initComplete: function () {
                             var api = this.api();
-                            var self = window.configViewer || this;
-                            
-                            // Make component available globally for onclick handlers
-                            window.configViewer = this;
+                            var self = window.configViewer; // Use the preserved Alpine component
                             
                             // Add enhanced column filters (skip Actions column at index 5)
-                            if (self.addEnhancedColumnFilters) {
+                            if (self && self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [5]);
                             }
                         }
@@ -1474,6 +1472,10 @@
                             </button>`
                         ];
                     });
+                    
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
                     
                     // Initialize DataTable
                     $('#addressGroupsTable').DataTable({
@@ -1533,13 +1535,10 @@
                         },
                         initComplete: function () {
                             var api = this.api();
-                            var self = window.configViewer || this;
-                            
-                            // Make component available globally for onclick handlers
-                            window.configViewer = this;
+                            var self = window.configViewer; // Use the preserved Alpine component
                             
                             // Add enhanced column filters (skip Actions column at index 5)
-                            if (self.addEnhancedColumnFilters) {
+                            if (self && self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [5]);
                             }
                         }
@@ -1574,6 +1573,10 @@
                             </button>`
                         ];
                     });
+                    
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
                     
                     // Initialize DataTable
                     $('#servicesTable').DataTable({
@@ -1633,13 +1636,10 @@
                         },
                         initComplete: function () {
                             var api = this.api();
-                            var self = window.configViewer || this;
-                            
-                            // Make component available globally for onclick handlers
-                            window.configViewer = this;
+                            var self = window.configViewer; // Use the preserved Alpine component
                             
                             // Add enhanced column filters (skip Actions column at index 5)
-                            if (self.addEnhancedColumnFilters) {
+                            if (self && self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [5]);
                             }
                         }
@@ -1676,6 +1676,10 @@
                             </button>`
                         ];
                     });
+                    
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
                     
                     // Initialize DataTable
                     $('#serviceGroupsTable').DataTable({
@@ -1734,13 +1738,10 @@
                         },
                         initComplete: function () {
                             var api = this.api();
-                            var self = window.configViewer || this;
-                            
-                            // Make component available globally for onclick handlers
-                            window.configViewer = this;
+                            var self = window.configViewer; // Use the preserved Alpine component
                             
                             // Add enhanced column filters (skip Actions column at index 4)
-                            if (self.addEnhancedColumnFilters) {
+                            if (self && self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [4]);
                             }
                         }
@@ -1804,8 +1805,9 @@
                         ];
                     });
                     
-                    // Make component available globally for onclick handlers
-                    window.configViewer = this;
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
                     
                     // Initialize DataTable with advanced features
                     $('#securityPoliciesTable').DataTable({
@@ -1887,10 +1889,10 @@
                         ],
                         initComplete: function () {
                             var api = this.api();
-                            var self = window.configViewer || this;
+                            var self = window.configViewer; // Use the preserved Alpine component
                             
                             // Add enhanced column filters (skip Order and Actions columns)
-                            if (self.addEnhancedColumnFilters) {
+                            if (self && self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [0, 13]);
                             }
                         }
