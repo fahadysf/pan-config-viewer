@@ -1429,6 +1429,9 @@
                             var api = this.api();
                             var self = window.configViewer || this;
                             
+                            // Make component available globally for onclick handlers
+                            window.configViewer = this;
+                            
                             // Add enhanced column filters (skip Actions column at index 5)
                             if (self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [5]);
@@ -1532,6 +1535,9 @@
                             var api = this.api();
                             var self = window.configViewer || this;
                             
+                            // Make component available globally for onclick handlers
+                            window.configViewer = this;
+                            
                             // Add enhanced column filters (skip Actions column at index 5)
                             if (self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [5]);
@@ -1628,6 +1634,9 @@
                         initComplete: function () {
                             var api = this.api();
                             var self = window.configViewer || this;
+                            
+                            // Make component available globally for onclick handlers
+                            window.configViewer = this;
                             
                             // Add enhanced column filters (skip Actions column at index 5)
                             if (self.addEnhancedColumnFilters) {
@@ -1727,6 +1736,9 @@
                             var api = this.api();
                             var self = window.configViewer || this;
                             
+                            // Make component available globally for onclick handlers
+                            window.configViewer = this;
+                            
                             // Add enhanced column filters (skip Actions column at index 4)
                             if (self.addEnhancedColumnFilters) {
                                 self.addEnhancedColumnFilters(api, [4]);
@@ -1791,6 +1803,9 @@
                             </button>`
                         ];
                     });
+                    
+                    // Make component available globally for onclick handlers
+                    window.configViewer = this;
                     
                     // Initialize DataTable with advanced features
                     $('#securityPoliciesTable').DataTable({
@@ -1880,9 +1895,6 @@
                             }
                         }
                     });
-                    
-                    // Make component available globally for onclick handlers
-                    window.configViewer = this;
                 },
                 
                 async loadAddressGroups() {
