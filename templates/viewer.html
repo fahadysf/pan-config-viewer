@@ -696,7 +696,7 @@
             border: 1px solid #d1d5db;
             border-radius: 6px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            z-index: 1000;
+            z-index: 9999;
             min-width: 280px;
             padding: 16px;
             margin-top: 4px;
@@ -806,6 +806,16 @@
         /* Ensure table headers have relative positioning for dropdown positioning */
         table.dataTable thead th {
             position: relative;
+            overflow: visible;
+        }
+        
+        /* Ensure table container allows overflow for dropdowns */
+        .dataTables_wrapper {
+            overflow: visible;
+        }
+        
+        table.dataTable {
+            overflow: visible;
         }
     </style>
 </head>
@@ -1009,14 +1019,6 @@
                                     <th>Description</th>
                                     <th>Actions</th>
                                 </tr>
-                                <tr class="column-filter-row">
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
@@ -1041,14 +1043,6 @@
                                     <th>Location</th>
                                     <th>Description</th>
                                     <th>Actions</th>
-                                </tr>
-                                <tr class="column-filter-row">
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -1075,14 +1069,6 @@
                                     <th>Description</th>
                                     <th>Actions</th>
                                 </tr>
-                                <tr class="column-filter-row">
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
@@ -1106,13 +1092,6 @@
                                     <th>Location</th>
                                     <th>Description</th>
                                     <th>Actions</th>
-                                </tr>
-                                <tr class="column-filter-row">
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -1188,22 +1167,6 @@
                                     <th>Type</th>
                                     <th>Status</th>
                                     <th>Actions</th>
-                                </tr>
-                                <tr class="column-filter-row">
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
