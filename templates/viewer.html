@@ -367,13 +367,8 @@
         
         /* Specific rules for security policies table */
         #securityPoliciesTable td {
-            max-width: 0;
             line-height: 1.5;
             min-height: 2.5rem;
-        }
-        
-        /* Handle comma-separated values */
-        #securityPoliciesTable td {
             word-break: break-word;
         }
         
@@ -1809,19 +1804,14 @@
                     const alpineComponent = this;
                     window.configViewer = alpineComponent;
                     
-                    // Initialize DataTable with advanced features
+                    // Initialize DataTable
                     $('#securityPoliciesTable').DataTable({
                         data: tableData,
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
-
-                        scrollY: false,
-                        scrollCollapse: true,
                         colReorder: true,
                         autoWidth: false,
-
-
                         order: [[0, 'asc']], // Sort by Order column by default
                         buttons: [
                             {
@@ -1844,18 +1834,6 @@
                                 extend: 'excel',
                                 text: '<i class="fas fa-file-excel"></i> Excel',
                                 className: 'dt-button-excel'
-                            },
-                            {
-                                extend: 'pdf',
-                                text: '<i class="fas fa-file-pdf"></i> PDF',
-                                className: 'dt-button-pdf',
-                                orientation: 'landscape',
-                                pageSize: 'LEGAL'
-                            },
-                            {
-                                extend: 'print',
-                                text: '<i class="fas fa-print"></i> Print',
-                                className: 'dt-button-print'
                             }
                         ],
                         language: {
@@ -1871,22 +1849,6 @@
                             },
                             emptyTable: "No security policies found"
                         },
-                        columnDefs: [
-                            { targets: [0], width: '60px', className: 'text-center' }, // Order
-                            { targets: [1], width: '200px' }, // Rule Name
-                            { targets: [2], width: '120px' }, // From Zone
-                            { targets: [3], width: '120px' }, // To Zone
-                            { targets: [4], width: '200px' }, // Source
-                            { targets: [5], width: '200px' }, // Destination
-                            { targets: [6], width: '150px' }, // Application
-                            { targets: [7], width: '150px' }, // Service
-                            { targets: [8], width: '80px', className: 'text-center' }, // Action
-                            { targets: [9], width: '80px', className: 'text-center' }, // Profile
-                            { targets: [10], width: '150px' }, // Device Group
-                            { targets: [11], width: '100px', className: 'text-center' }, // Type
-                            { targets: [12], width: '100px', className: 'text-center' }, // Status
-                            { targets: [13], width: '80px', className: 'text-center' } // Actions
-                        ],
                         initComplete: function () {
                             var api = this.api();
                             var self = window.configViewer; // Use the preserved Alpine component
