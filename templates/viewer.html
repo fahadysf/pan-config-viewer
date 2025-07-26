@@ -654,6 +654,159 @@
         table.dataTable thead .sorting_desc:after {
             content: "";
         }
+        
+        /* Burger Menu Column Filter Styles */
+        .column-burger-menu {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 4px 6px;
+            cursor: pointer;
+            color: #6b7280;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+        
+        .column-burger-menu:hover {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        
+        .column-burger-menu.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .column-burger-menu.filtered {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .column-burger-menu.filtered:hover {
+            background-color: #059669;
+        }
+        
+        .enhanced-filter-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            min-width: 280px;
+            padding: 16px;
+            margin-top: 4px;
+        }
+        
+        .enhanced-filter-dropdown.show {
+            display: block;
+        }
+        
+        .filter-section {
+            margin-bottom: 16px;
+        }
+        
+        .filter-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .filter-section label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        
+        .enhanced-filter-dropdown .filter-operator-select,
+        .enhanced-filter-dropdown .filter-search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .enhanced-filter-dropdown .filter-operator-select:focus,
+        .enhanced-filter-dropdown .filter-search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .enhanced-filter-dropdown .filter-sort-buttons {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .enhanced-filter-dropdown .filter-sort-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .enhanced-filter-dropdown .filter-sort-btn:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .enhanced-filter-dropdown .filter-sort-btn.active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .enhanced-filter-dropdown .filter-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .enhanced-filter-dropdown .filter-action-btn {
+            flex: 1;
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+        
+        .enhanced-filter-dropdown .filter-action-btn.primary {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .enhanced-filter-dropdown .filter-action-btn.primary:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .enhanced-filter-dropdown .filter-action-btn:not(.primary):hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        /* Ensure table headers have relative positioning for dropdown positioning */
+        table.dataTable thead th {
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-gray-50" x-data="configViewer()" x-init="init()">
@@ -2046,40 +2199,49 @@
                 
                 // Helper function to add enhanced column filters
                 addEnhancedColumnFilters(api, skipColumns = []) {
-                    $('.column-filter-row th', api.table().header()).each(function (index) {
+                    // Add burger menu icons to column headers
+                    api.columns().every(function (index) {
                         // Skip specified columns
                         if (skipColumns.includes(index)) return;
                         
-                        var column = api.column(index);
-                        var $th = $(this);
+                        var column = this;
+                        var $header = $(column.header());
                         
-                        // Create enhanced filter container
-                        var filterContainer = $('<div class="column-filter-container"></div>');
-                        var filterButton = $('<button class="column-filter-button" type="button">' +
-                            '<span class="filter-text">All</span>' +
-                            '<i class="fas fa-chevron-down"></i>' +
-                            '</button>');
+                        // Skip if burger menu already exists
+                        if ($header.find('.column-burger-menu').length > 0) return;
                         
-                        var dropdown = $('<div class="column-filter-dropdown">' +
-                            '<select class="filter-operator-select">' +
-                                '<option value="contains">Contains</option>' +
-                                '<option value="not_contains">Does not contain</option>' +
-                                '<option value="equals">Equals</option>' +
-                                '<option value="not_equals">Does not equal</option>' +
-                                '<option value="starts">Starts with</option>' +
-                                '<option value="ends">Ends with</option>' +
-                                '<option value="empty">Empty</option>' +
-                                '<option value="not_empty">Not empty</option>' +
-                            '</select>' +
-                            '<input type="text" class="filter-search-input" placeholder="Enter filter value...">' +
-                            '<div class="filter-sort-section">' +
-                                '<span class="filter-sort-label">Sort</span>' +
+                        // Create burger menu icon
+                        var burgerMenu = $('<span class="column-burger-menu" title="Filter options">' +
+                            '<i class="fas fa-bars"></i>' +
+                            '</span>');
+                        
+                        // Create dropdown menu
+                        var dropdown = $('<div class="enhanced-filter-dropdown">' +
+                            '<div class="filter-section">' +
+                                '<label>Filter Type:</label>' +
+                                '<select class="filter-operator-select">' +
+                                    '<option value="contains">Contains</option>' +
+                                    '<option value="not_contains">Does not contain</option>' +
+                                    '<option value="equals">Equals</option>' +
+                                    '<option value="not_equals">Does not equal</option>' +
+                                    '<option value="starts">Starts with</option>' +
+                                    '<option value="ends">Ends with</option>' +
+                                    '<option value="empty">Empty</option>' +
+                                    '<option value="not_empty">Not empty</option>' +
+                                '</select>' +
+                            '</div>' +
+                            '<div class="filter-section">' +
+                                '<label>Search:</label>' +
+                                '<input type="text" class="filter-search-input" placeholder="Enter search term...">' +
+                            '</div>' +
+                            '<div class="filter-section">' +
+                                '<label>Sort:</label>' +
                                 '<div class="filter-sort-buttons">' +
                                     '<button type="button" class="filter-sort-btn" data-sort="asc">' +
-                                        '<i class="fas fa-sort-alpha-down"></i> Asc' +
+                                        '<i class="fas fa-sort-alpha-down"></i> A-Z' +
                                     '</button>' +
                                     '<button type="button" class="filter-sort-btn" data-sort="desc">' +
-                                        '<i class="fas fa-sort-alpha-up"></i> Desc' +
+                                        '<i class="fas fa-sort-alpha-up"></i> Z-A' +
                                     '</button>' +
                                     '<button type="button" class="filter-sort-btn" data-sort="clear">' +
                                         '<i class="fas fa-times"></i> Clear' +
@@ -2092,20 +2254,21 @@
                             '</div>' +
                             '</div>');
                         
-                        filterContainer.append(filterButton).append(dropdown);
-                        $th.append(filterContainer);
+                        // Add burger menu to header (next to existing content)
+                        $header.append(burgerMenu);
+                        $header.append(dropdown);
                         
-                        // Toggle dropdown
-                        filterButton.on('click', function(e) {
+                        // Toggle dropdown on burger menu click
+                        burgerMenu.on('click', function(e) {
                             e.stopPropagation();
                             
                             // Close other dropdowns
-                            $('.column-filter-dropdown').removeClass('show');
-                            $('.column-filter-button').removeClass('active');
+                            $('.enhanced-filter-dropdown').removeClass('show');
+                            $('.column-burger-menu').removeClass('active');
                             
                             // Toggle current dropdown
                             dropdown.toggleClass('show');
-                            filterButton.toggleClass('active');
+                            burgerMenu.toggleClass('active');
                         });
                         
                         // Apply filter
@@ -2117,14 +2280,12 @@
                                 var searchRegex = window.configViewer.buildFilterRegex(operator, value);
                                 column.search(searchRegex, true, false).draw();
                                 
-                                // Update button text
-                                var buttonText = value ? (operator + ': ' + value) : operator;
-                                filterButton.find('.filter-text').text(buttonText);
-                                filterButton.addClass('active');
+                                // Visual feedback - highlight burger menu when filter is active
+                                burgerMenu.addClass('filtered');
                             }
                             
                             dropdown.removeClass('show');
-                            filterButton.removeClass('active');
+                            burgerMenu.removeClass('active');
                         });
                         
                         // Clear filter
@@ -2132,9 +2293,9 @@
                             column.search('').draw();
                             dropdown.find('.filter-search-input').val('');
                             dropdown.find('.filter-operator-select').val('contains');
-                            filterButton.find('.filter-text').text('All');
-                            filterButton.removeClass('active');
+                            burgerMenu.removeClass('filtered');
                             dropdown.removeClass('show');
+                            burgerMenu.removeClass('active');
                         });
                         
                         // Sort buttons
@@ -2142,17 +2303,17 @@
                             var sortType = $(this).data('sort');
                             
                             dropdown.find('.filter-sort-btn').removeClass('active');
+                            $(this).addClass('active');
                             
                             if (sortType === 'clear') {
                                 column.order('');
                             } else {
-                                $(this).addClass('active');
                                 column.order(sortType);
                             }
                             
                             api.draw();
                             dropdown.removeClass('show');
-                            filterButton.removeClass('active');
+                            burgerMenu.removeClass('active');
                         });
                         
                         // Prevent dropdown close when clicking inside
@@ -2163,8 +2324,8 @@
                     
                     // Close dropdowns when clicking outside
                     $(document).on('click', function() {
-                        $('.column-filter-dropdown').removeClass('show');
-                        $('.column-filter-button').removeClass('active');
+                        $('.enhanced-filter-dropdown').removeClass('show');
+                        $('.column-burger-menu').removeClass('active');
                     });
                 }
             }
