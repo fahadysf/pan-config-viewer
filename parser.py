@@ -33,7 +33,12 @@ class PanoramaXMLParser:
     def _detect_config_type(self):
         """Detect if this is a Panorama or firewall configuration"""
         # Check for Panorama-specific elements
-        if self.root.find(".//device-group") is not None or self.root.find(".//template") is not None:
+        # Device groups are under /config/devices/entry/device-group in Panorama configs
+        devices_entry = self.root.find("./devices/entry")
+        has_device_group = devices_entry is not None and devices_entry.find("device-group") is not None
+        has_template = self.root.find(".//template") is not None
+        
+        if has_device_group or has_template:
             self.is_panorama = True
         # Check for firewall-specific elements
         elif self.root.find(".//devices/entry/vsys") is not None:
@@ -157,9 +162,13 @@ class PanoramaXMLParser:
         all_addresses.extend(self._parse_addresses_from_element(shared_addresses))
         
         # Get addresses from device groups
-        for dg in self.root.findall(".//device-group/entry"):
-            dg_addresses = dg.find("address")
-            all_addresses.extend(self._parse_addresses_from_element(dg_addresses))
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is not None:
+            dg_element = devices_entry.find("device-group")
+            if dg_element is not None:
+                for dg in dg_element.findall("entry"):
+                    dg_addresses = dg.find("address")
+                    all_addresses.extend(self._parse_addresses_from_element(dg_addresses))
         
         # Get addresses from templates  
         for tmpl in self.root.findall(".//template/entry"):
@@ -388,7 +397,12 @@ class PanoramaXMLParser:
     def get_device_group_summaries(self) -> List[DeviceGroupSummary]:
         """Parse device groups and return summaries with counts"""
         summaries = []
-        dg_element = self.root.find(".//device-group")
+        # Find device-group under devices/entry, not under admin roles
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return summaries
+        
+        dg_element = devices_entry.find("device-group")
         if dg_element is None:
             return summaries
         
@@ -469,7 +483,12 @@ class PanoramaXMLParser:
     def get_device_groups(self) -> List[DeviceGroup]:
         """Parse device groups"""
         groups = []
-        dg_element = self.root.find(".//device-group")
+        # Find device-group under devices/entry, not under admin roles
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return groups
+        
+        dg_element = devices_entry.find("device-group")
         if dg_element is None:
             return groups
         
@@ -672,7 +691,15 @@ class PanoramaXMLParser:
     
     def get_device_group_addresses(self, device_group_name: str) -> List[AddressObject]:
         """Get addresses for a specific device group"""
-        dg_element = self.root.find(f".//device-group/entry[@name='{device_group_name}']")
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return []
+        
+        dg_parent = devices_entry.find("device-group")
+        if dg_parent is None:
+            return []
+        
+        dg_element = dg_parent.find(f"entry[@name='{device_group_name}']")
         if dg_element is None:
             return []
         
@@ -681,7 +708,15 @@ class PanoramaXMLParser:
     
     def get_device_group_address_groups(self, device_group_name: str) -> List[AddressGroup]:
         """Get address groups for a specific device group"""
-        dg_element = self.root.find(f".//device-group/entry[@name='{device_group_name}']")
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return []
+        
+        dg_parent = devices_entry.find("device-group")
+        if dg_parent is None:
+            return []
+        
+        dg_element = dg_parent.find(f"entry[@name='{device_group_name}']")
         if dg_element is None:
             return []
         
@@ -716,7 +751,15 @@ class PanoramaXMLParser:
     
     def get_device_group_services(self, device_group_name: str) -> List[ServiceObject]:
         """Get services for a specific device group"""
-        dg_element = self.root.find(f".//device-group/entry[@name='{device_group_name}']")
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return []
+        
+        dg_parent = devices_entry.find("device-group")
+        if dg_parent is None:
+            return []
+        
+        dg_element = dg_parent.find(f"entry[@name='{device_group_name}']")
         if dg_element is None:
             return []
         
@@ -766,7 +809,15 @@ class PanoramaXMLParser:
     
     def get_device_group_service_groups(self, device_group_name: str) -> List[ServiceGroup]:
         """Get service groups for a specific device group"""
-        dg_element = self.root.find(f".//device-group/entry[@name='{device_group_name}']")
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return []
+        
+        dg_parent = devices_entry.find("device-group")
+        if dg_parent is None:
+            return []
+        
+        dg_element = dg_parent.find(f"entry[@name='{device_group_name}']")
         if dg_element is None:
             return []
         
@@ -797,7 +848,15 @@ class PanoramaXMLParser:
     
     def get_device_group_security_rules(self, device_group_name: str, rulebase: str = "all") -> List[SecurityRule]:
         """Get security rules for a specific device group"""
-        dg_element = self.root.find(f".//device-group/entry[@name='{device_group_name}']")
+        devices_entry = self.root.find("./devices/entry")
+        if devices_entry is None:
+            return []
+        
+        dg_parent = devices_entry.find("device-group")
+        if dg_parent is None:
+            return []
+        
+        dg_element = dg_parent.find(f"entry[@name='{device_group_name}']")
         if dg_element is None:
             return []
         
