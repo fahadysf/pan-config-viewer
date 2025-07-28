@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Group Detection Test Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .summary {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .pass {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .device-group-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .metric {
+            display: inline-block;
+            margin: 0 20px 10px 0;
+        }
+        .metric-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .metric-value {
+            font-size: 1.2em;
+            color: #333;
+        }
+        .test-section {
+            margin: 30px 0;
+        }
+        .code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Device Group Detection Test Report</h1>
+        <p>Generated: 2025-07-28 23:27:11</p>
+        
+        <div class="summary">
+            <h2>Test Summary</h2>
+            <div class="metric">
+                <span class="metric-label">Total Tests:</span>
+                <span class="metric-value">6</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Passed:</span>
+                <span class="metric-value pass">6</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Failed:</span>
+                <span class="metric-value fail">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Success Rate:</span>
+                <span class="metric-value">100.0%</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Configuration Details</h2>
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Config File</td>
+                    <td class="code">config-files/16-7-Panorama-Core-688.xml</td>
+                </tr>
+                <tr>
+                    <td>API Base URL</td>
+                    <td class="code">http://localhost:8000/api/v1</td>
+                </tr>
+                <tr>
+                    <td>Expected Device Groups</td>
+                    <td>6</td>
+                </tr>
+                <tr>
+                    <td>Found Device Groups</td>
+                    <td class="pass">6</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="test-section">
+            <h2>Device Groups Detected</h2>
+            
+        <div class="device-group-card">
+            <h3>TCN-DC-SWIFT-VSYS</h3>
+            <div class="metric">
+                <span class="metric-label">Addresses:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Services:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pre-Rules:</span>
+                <span class="metric-value">280</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Post-Rules:</span>
+                <span class="metric-value">0</span>
+            </div>
+        </div>
+        
+        <div class="device-group-card">
+            <h3>TCN-DC-Tapping-Vsys</h3>
+            <div class="metric">
+                <span class="metric-label">Addresses:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Services:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pre-Rules:</span>
+                <span class="metric-value">1</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Post-Rules:</span>
+                <span class="metric-value">0</span>
+            </div>
+        </div>
+        
+        <div class="device-group-card">
+            <h3>TCN-DC-Vsys1</h3>
+            <div class="metric">
+                <span class="metric-label">Addresses:</span>
+                <span class="metric-value">508</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Services:</span>
+                <span class="metric-value">95</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pre-Rules:</span>
+                <span class="metric-value">13791</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Post-Rules:</span>
+                <span class="metric-value">4</span>
+            </div>
+        </div>
+        
+        <div class="device-group-card">
+            <h3>KIZAD-DC-Vsys1</h3>
+            <div class="metric">
+                <span class="metric-label">Addresses:</span>
+                <span class="metric-value">684</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Services:</span>
+                <span class="metric-value">97</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pre-Rules:</span>
+                <span class="metric-value">19221</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Post-Rules:</span>
+                <span class="metric-value">10</span>
+            </div>
+        </div>
+        
+        <div class="device-group-card">
+            <h3>KIZAD-DC-Tapping-Vsys</h3>
+            <div class="metric">
+                <span class="metric-label">Addresses:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Services:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pre-Rules:</span>
+                <span class="metric-value">1</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Post-Rules:</span>
+                <span class="metric-value">0</span>
+            </div>
+        </div>
+        
+        <div class="device-group-card">
+            <h3>KIZAD-DC-SWIFT-VSYS</h3>
+            <div class="metric">
+                <span class="metric-label">Addresses:</span>
+                <span class="metric-value">3</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Services:</span>
+                <span class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pre-Rules:</span>
+                <span class="metric-value">294</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Post-Rules:</span>
+                <span class="metric-value">0</span>
+            </div>
+        </div>
+        
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Results by Category</h2>
+            
+    <table>
+        <tr>
+            <th>Category</th>
+            <th>Total Tests</th>
+            <th>Passed</th>
+            <th>Failed</th>
+            <th>Success Rate</th>
+        </tr>
+        
+        <tr>
+            <td>Parser Tests</td>
+            <td>1</td>
+            <td class="pass">1</td>
+            <td class="fail">0</td>
+            <td class="pass">100.0%</td>
+        </tr>
+        
+        <tr>
+            <td>API Tests</td>
+            <td>5</td>
+            <td class="pass">5</td>
+            <td class="fail">0</td>
+            <td class="pass">100.0%</td>
+        </tr>
+        
+        <tr>
+            <td>Data Integrity</td>
+            <td>0</td>
+            <td class="pass">0</td>
+            <td class="fail">0</td>
+            <td class="pass">0.0%</td>
+        </tr>
+        
+        <tr>
+            <td>Edge Cases</td>
+            <td>0</td>
+            <td class="pass">0</td>
+            <td class="fail">0</td>
+            <td class="pass">0.0%</td>
+        </tr>
+        
+    </table>
+    
+        </div>
+        
+        <div class="test-section">
+            <h2>API Endpoint Tests</h2>
+            
+    <table>
+        <tr>
+            <th>Endpoint</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Response Time</th>
+            <th>HTTP Code</th>
+        </tr>
+        
+        <tr>
+            <td>/configs/16-7-Panorama-Core-688/device-groups</td>
+            <td>GET</td>
+            <td class="pass">PASS</td>
+            <td>85ms</td>
+            <td>200</td>
+        </tr>
+        
+        <tr>
+            <td>/configs/16-7-Panorama-Core-688/device-groups/TCN-DC-SWIFT-VSYS</td>
+            <td>GET</td>
+            <td class="pass">PASS</td>
+            <td>16926ms</td>
+            <td>200</td>
+        </tr>
+        
+        <tr>
+            <td>/configs/16-7-Panorama-Core-688/device-groups/TCN-DC-SWIFT-VSYS/addresses</td>
+            <td>GET</td>
+            <td class="pass">PASS</td>
+            <td>28ms</td>
+            <td>200</td>
+        </tr>
+        
+        <tr>
+            <td>/configs/16-7-Panorama-Core-688/device-groups/TCN-DC-SWIFT-VSYS/services</td>
+            <td>GET</td>
+            <td class="pass">PASS</td>
+            <td>5ms</td>
+            <td>200</td>
+        </tr>
+        
+        <tr>
+            <td>/configs/16-7-Panorama-Core-688/device-groups/TCN-DC-SWIFT-VSYS/rules</td>
+            <td>GET</td>
+            <td class="pass">PASS</td>
+            <td>24ms</td>
+            <td>200</td>
+        </tr>
+        
+    </table>
+    
+        </div>
+        
+        
+    </div>
+</body>
+</html>
+    
