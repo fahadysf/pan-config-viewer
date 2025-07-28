@@ -12,7 +12,7 @@ from models import (
     URLFilteringProfile, FileBlockingProfile, WildFireAnalysisProfile,
     DataFilteringProfile, SecurityProfileGroup, SecurityRule, NATRule,
     DeviceGroup, DeviceGroupSummary, Template, TemplateStack, LogSetting, Schedule,
-    ZoneProtectionProfile
+    ZoneProtectionProfile, PaginationParams, PaginatedResponse
 )
 
 # Initialize FastAPI app with comprehensive documentation
@@ -141,6 +141,39 @@ def get_parser(config_name: str) -> PanoramaXMLParser:
     
     return parsers[config_name]
 
+def paginate_results(items: List, pagination: PaginationParams) -> Dict:
+    """Apply pagination to a list of items and return paginated response"""
+    if pagination.disable_paging:
+        return {
+            "items": items,
+            "total_items": len(items),
+            "page": 1,
+            "page_size": len(items),
+            "total_pages": 1,
+            "has_next": False,
+            "has_previous": False
+        }
+    
+    total_items = len(items)
+    total_pages = (total_items + pagination.page_size - 1) // pagination.page_size
+    
+    # Calculate start and end indices
+    start_idx = (pagination.page - 1) * pagination.page_size
+    end_idx = start_idx + pagination.page_size
+    
+    # Get the page of items
+    paginated_items = items[start_idx:end_idx]
+    
+    return {
+        "items": paginated_items,
+        "total_items": total_items,
+        "page": pagination.page,
+        "page_size": pagination.page_size,
+        "total_pages": total_pages,
+        "has_next": pagination.page < total_pages,
+        "has_previous": pagination.page > 1
+    }
+
 @app.get("/", include_in_schema=False)
 async def root():
     """Redirect to API documentation"""
@@ -185,17 +218,20 @@ async def get_config_info(
 
 # Address Objects Endpoints
 @app.get("/api/v1/configs/{config_name}/addresses", 
-         response_model=List[AddressObject],
+         response_model=PaginatedResponse,
          tags=["Address Objects"],
          summary="Get all address objects",
-         description="Retrieve all shared address objects from the configuration. Supports filtering by name and tags.")
+         description="Retrieve all shared address objects from the configuration. Supports filtering by name and tags, with pagination.")
 async def get_addresses(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     name: Optional[str] = Query(None, description="Filter by address name (partial match)"),
     tag: Optional[str] = Query(None, description="Filter by tag"),
-    location: Optional[str] = Query("all", description="Filter by location (all/shared/device-group/template/vsys)")
+    location: Optional[str] = Query("all", description="Filter by location (all/shared/device-group/template/vsys)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get address objects with optional filtering"""
+    """Get address objects with optional filtering and pagination"""
     parser = get_parser(config_name)
     
     # Get addresses based on location filter
@@ -218,7 +254,9 @@ async def get_addresses(
     if tag:
         addresses = [a for a in addresses if a.tag and tag in a.tag]
     
-    return addresses
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(addresses, pagination)
 
 @app.get("/api/v1/configs/{config_name}/addresses/{address_name}",
          response_model=AddressObject,
@@ -239,16 +277,19 @@ async def get_address(
     raise HTTPException(status_code=404, detail=f"Address '{address_name}' not found")
 
 @app.get("/api/v1/configs/{config_name}/address-groups",
-         response_model=List[AddressGroup],
+         response_model=PaginatedResponse,
          tags=["Address Objects"],
          summary="Get all address groups",
-         description="Retrieve all shared address groups including static and dynamic groups")
+         description="Retrieve all shared address groups including static and dynamic groups, with pagination")
 async def get_address_groups(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
-    tag: Optional[str] = Query(None, description="Filter by tag")
+    tag: Optional[str] = Query(None, description="Filter by tag"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared address groups with optional filtering"""
+    """Get all shared address groups with optional filtering and pagination"""
     parser = get_parser(config_name)
     groups = parser.get_shared_address_groups()
     
@@ -258,7 +299,9 @@ async def get_address_groups(
     if tag:
         groups = [g for g in groups if g.tag and tag in g.tag]
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 @app.get("/api/v1/configs/{config_name}/address-groups/{group_name}",
          response_model=AddressGroup,
@@ -279,16 +322,19 @@ async def get_address_group(
 
 # Service Objects Endpoints
 @app.get("/api/v1/configs/{config_name}/services",
-         response_model=List[ServiceObject],
+         response_model=PaginatedResponse,
          tags=["Service Objects"],
          summary="Get all service objects",
-         description="Retrieve all shared service objects with protocol definitions")
+         description="Retrieve all shared service objects with protocol definitions, with pagination")
 async def get_services(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     name: Optional[str] = Query(None, description="Filter by service name (partial match)"),
-    protocol: Optional[str] = Query(None, description="Filter by protocol (tcp/udp)")
+    protocol: Optional[str] = Query(None, description="Filter by protocol (tcp/udp)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared service objects with optional filtering"""
+    """Get all shared service objects with optional filtering and pagination"""
     parser = get_parser(config_name)
     services = parser.get_shared_services()
     
@@ -298,7 +344,9 @@ async def get_services(
     if protocol and protocol.lower() in ["tcp", "udp"]:
         services = [s for s in services if hasattr(s.protocol, protocol.lower()) and getattr(s.protocol, protocol.lower())]
     
-    return services
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(services, pagination)
 
 @app.get("/api/v1/configs/{config_name}/services/{service_name}",
          response_model=ServiceObject,
@@ -318,15 +366,18 @@ async def get_service(
     raise HTTPException(status_code=404, detail=f"Service '{service_name}' not found")
 
 @app.get("/api/v1/configs/{config_name}/service-groups",
-         response_model=List[ServiceGroup],
+         response_model=PaginatedResponse,
          tags=["Service Objects"],
          summary="Get all service groups",
-         description="Retrieve all shared service groups")
+         description="Retrieve all shared service groups, with pagination")
 async def get_service_groups(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared service groups with optional filtering"""
+    """Get all shared service groups with optional filtering and pagination"""
     parser = get_parser(config_name)
     groups = parser.get_shared_service_groups()
     
@@ -334,19 +385,24 @@ async def get_service_groups(
     if name:
         groups = [g for g in groups if name.lower() in g.name.lower()]
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 # Shared Location Endpoints
 @app.get("/api/v1/configs/{config_name}/shared/addresses",
-         response_model=List[AddressObject],
+         response_model=PaginatedResponse,
          tags=["Address Objects"],
          summary="Get shared address objects",
-         description="Retrieve all address objects defined in the shared location")
+         description="Retrieve all address objects defined in the shared location, with pagination")
 async def get_shared_addresses(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by address name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by address name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared address objects"""
+    """Get all shared address objects with pagination"""
     parser = get_parser(config_name)
     addresses = parser.get_shared_addresses()
     
@@ -359,18 +415,23 @@ async def get_shared_addresses(
         addr.parent_template = None
         addr.parent_vsys = None
     
-    return addresses
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(addresses, pagination)
 
 @app.get("/api/v1/configs/{config_name}/shared/address-groups",
-         response_model=List[AddressGroup],
+         response_model=PaginatedResponse,
          tags=["Address Objects"],
          summary="Get shared address groups",
-         description="Retrieve all address groups defined in the shared location")
+         description="Retrieve all address groups defined in the shared location, with pagination")
 async def get_shared_address_groups_endpoint(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared address groups"""
+    """Get all shared address groups with pagination"""
     parser = get_parser(config_name)
     groups = parser.get_shared_address_groups()
     
@@ -383,18 +444,23 @@ async def get_shared_address_groups_endpoint(
         group.parent_template = None
         group.parent_vsys = None
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 @app.get("/api/v1/configs/{config_name}/shared/services",
-         response_model=List[ServiceObject],
+         response_model=PaginatedResponse,
          tags=["Service Objects"],
          summary="Get shared service objects",
-         description="Retrieve all service objects defined in the shared location")
+         description="Retrieve all service objects defined in the shared location, with pagination")
 async def get_shared_services(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by service name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by service name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared service objects"""
+    """Get all shared service objects with pagination"""
     parser = get_parser(config_name)
     services = parser.get_shared_services()
     
@@ -407,18 +473,23 @@ async def get_shared_services(
         svc.parent_template = None
         svc.parent_vsys = None
     
-    return services
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(services, pagination)
 
 @app.get("/api/v1/configs/{config_name}/shared/service-groups",
-         response_model=List[ServiceGroup],
+         response_model=PaginatedResponse,
          tags=["Service Objects"],
          summary="Get shared service groups",
-         description="Retrieve all service groups defined in the shared location")
+         description="Retrieve all service groups defined in the shared location, with pagination")
 async def get_shared_service_groups_endpoint(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all shared service groups"""
+    """Get all shared service groups with pagination"""
     parser = get_parser(config_name)
     groups = parser.get_shared_service_groups()
     
@@ -431,57 +502,72 @@ async def get_shared_service_groups_endpoint(
         group.parent_template = None
         group.parent_vsys = None
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 # Security Profiles Endpoints
 @app.get("/api/v1/configs/{config_name}/security-profiles/vulnerability",
-         response_model=List[VulnerabilityProfile],
+         response_model=PaginatedResponse,
          tags=["Security Profiles"],
          summary="Get vulnerability protection profiles",
-         description="Retrieve all vulnerability protection profiles with their rules")
+         description="Retrieve all vulnerability protection profiles with their rules, with pagination")
 async def get_vulnerability_profiles(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by profile name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by profile name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all vulnerability protection profiles"""
+    """Get all vulnerability protection profiles with pagination"""
     parser = get_parser(config_name)
     profiles = parser.get_vulnerability_profiles()
     
     if name:
         profiles = [p for p in profiles if name.lower() in p.name.lower()]
     
-    return profiles
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(profiles, pagination)
 
 @app.get("/api/v1/configs/{config_name}/security-profiles/url-filtering",
-         response_model=List[URLFilteringProfile],
+         response_model=PaginatedResponse,
          tags=["Security Profiles"],
          summary="Get URL filtering profiles",
-         description="Retrieve all URL filtering profiles with category actions")
+         description="Retrieve all URL filtering profiles with category actions, with pagination")
 async def get_url_filtering_profiles(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by profile name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by profile name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all URL filtering profiles"""
+    """Get all URL filtering profiles with pagination"""
     parser = get_parser(config_name)
     profiles = parser.get_url_filtering_profiles()
     
     if name:
         profiles = [p for p in profiles if name.lower() in p.name.lower()]
     
-    return profiles
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(profiles, pagination)
 
 # Device Management Endpoints
 @app.get("/api/v1/configs/{config_name}/device-groups",
-         response_model=List[DeviceGroupSummary],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get all device groups summary",
-         description="Retrieve all device groups with counts of their child objects")
+         description="Retrieve all device groups with counts of their child objects, with pagination")
 async def get_device_groups(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     name: Optional[str] = Query(None, description="Filter by device group name (partial match)"),
-    parent: Optional[str] = Query(None, description="Filter by parent device group")
+    parent: Optional[str] = Query(None, description="Filter by parent device group"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all device groups with counts of child objects"""
+    """Get all device groups with counts of child objects and pagination"""
     parser = get_parser(config_name)
     groups = parser.get_device_group_summaries()
     
@@ -491,7 +577,9 @@ async def get_device_groups(
     if parent:
         groups = [g for g in groups if g.parent_dg and parent.lower() in g.parent_dg.lower()]
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 @app.get("/api/v1/configs/{config_name}/device-groups/{group_name}",
          response_model=DeviceGroup,
@@ -511,16 +599,19 @@ async def get_device_group(
     raise HTTPException(status_code=404, detail=f"Device group '{group_name}' not found")
 
 @app.get("/api/v1/configs/{config_name}/device-groups/{group_name}/addresses",
-         response_model=List[AddressObject],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get addresses for device group",
-         description="Retrieve all address objects defined in a specific device group")
+         description="Retrieve all address objects defined in a specific device group, with pagination")
 async def get_device_group_addresses(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     group_name: str = Path(..., description="Device group name"),
-    name: Optional[str] = Query(None, description="Filter by address name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by address name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get addresses for a specific device group"""
+    """Get addresses for a specific device group with pagination"""
     parser = get_parser(config_name)
     addresses = parser.get_device_group_addresses(group_name)
     
@@ -531,19 +622,24 @@ async def get_device_group_addresses(
     if name:
         addresses = [a for a in addresses if name.lower() in a.name.lower()]
     
-    return addresses
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(addresses, pagination)
 
 @app.get("/api/v1/configs/{config_name}/device-groups/{group_name}/address-groups",
-         response_model=List[AddressGroup],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get address groups for device group",
-         description="Retrieve all address groups defined in a specific device group")
+         description="Retrieve all address groups defined in a specific device group, with pagination")
 async def get_device_group_address_groups(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     group_name: str = Path(..., description="Device group name"),
-    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get address groups for a specific device group"""
+    """Get address groups for a specific device group with pagination"""
     parser = get_parser(config_name)
     groups = parser.get_device_group_address_groups(group_name)
     
@@ -551,19 +647,24 @@ async def get_device_group_address_groups(
     if name:
         groups = [g for g in groups if name.lower() in g.name.lower()]
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 @app.get("/api/v1/configs/{config_name}/device-groups/{group_name}/services",
-         response_model=List[ServiceObject],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get services for device group",
-         description="Retrieve all service objects defined in a specific device group")
+         description="Retrieve all service objects defined in a specific device group, with pagination")
 async def get_device_group_services(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     group_name: str = Path(..., description="Device group name"),
-    name: Optional[str] = Query(None, description="Filter by service name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by service name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get services for a specific device group"""
+    """Get services for a specific device group with pagination"""
     parser = get_parser(config_name)
     services = parser.get_device_group_services(group_name)
     
@@ -571,19 +672,24 @@ async def get_device_group_services(
     if name:
         services = [s for s in services if name.lower() in s.name.lower()]
     
-    return services
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(services, pagination)
 
 @app.get("/api/v1/configs/{config_name}/device-groups/{group_name}/service-groups",
-         response_model=List[ServiceGroup],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get service groups for device group",
-         description="Retrieve all service groups defined in a specific device group")
+         description="Retrieve all service groups defined in a specific device group, with pagination")
 async def get_device_group_service_groups(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     group_name: str = Path(..., description="Device group name"),
-    name: Optional[str] = Query(None, description="Filter by group name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get service groups for a specific device group"""
+    """Get service groups for a specific device group with pagination"""
     parser = get_parser(config_name)
     groups = parser.get_device_group_service_groups(group_name)
     
@@ -591,19 +697,24 @@ async def get_device_group_service_groups(
     if name:
         groups = [g for g in groups if name.lower() in g.name.lower()]
     
-    return groups
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(groups, pagination)
 
 @app.get("/api/v1/configs/{config_name}/device-groups/{group_name}/rules",
-         response_model=List[SecurityRule],
+         response_model=PaginatedResponse,
          tags=["Policies"],
          summary="Get security rules for device group",
-         description="Retrieve all security rules (pre and post) for a specific device group")
+         description="Retrieve all security rules (pre and post) for a specific device group, with pagination")
 async def get_device_group_rules(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     group_name: str = Path(..., description="Device group name"),
-    rulebase: Optional[str] = Query("all", description="Filter by rulebase type (pre/post/all)")
+    rulebase: Optional[str] = Query("all", description="Filter by rulebase type (pre/post/all)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get security rules for a specific device group"""
+    """Get security rules for a specific device group with pagination"""
     parser = get_parser(config_name)
     rules = parser.get_device_group_security_rules(group_name, rulebase)
     
@@ -613,25 +724,32 @@ async def get_device_group_rules(
         if not any(s.name == group_name for s in summaries):
             raise HTTPException(status_code=404, detail=f"Device group '{group_name}' not found")
     
-    return rules
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(rules, pagination)
 
 @app.get("/api/v1/configs/{config_name}/templates",
-         response_model=List[Template],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get all templates",
-         description="Retrieve all device templates")
+         description="Retrieve all device templates, with pagination")
 async def get_templates(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by template name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by template name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all templates with optional filtering"""
+    """Get all templates with optional filtering and pagination"""
     parser = get_parser(config_name)
     templates = parser.get_templates()
     
     if name:
         templates = [t for t in templates if name.lower() in t.name.lower()]
     
-    return templates
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(templates, pagination)
 
 @app.get("/api/v1/configs/{config_name}/templates/{template_name}",
          response_model=Template,
@@ -651,22 +769,27 @@ async def get_template(
     raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
 
 @app.get("/api/v1/configs/{config_name}/template-stacks",
-         response_model=List[TemplateStack],
+         response_model=PaginatedResponse,
          tags=["Device Management"],
          summary="Get all template stacks",
-         description="Retrieve all template stacks with their member templates")
+         description="Retrieve all template stacks with their member templates, with pagination")
 async def get_template_stacks(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by stack name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by stack name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all template stacks with optional filtering"""
+    """Get all template stacks with optional filtering and pagination"""
     parser = get_parser(config_name)
     stacks = parser.get_template_stacks()
     
     if name:
         stacks = [s for s in stacks if name.lower() in s.name.lower()]
     
-    return stacks
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(stacks, pagination)
 
 @app.get("/api/v1/configs/{config_name}/template-stacks/{stack_name}",
          response_model=TemplateStack,
@@ -687,40 +810,50 @@ async def get_template_stack(
 
 # Logging Endpoints
 @app.get("/api/v1/configs/{config_name}/log-profiles",
-         response_model=List[LogSetting],
+         response_model=PaginatedResponse,
          tags=["Logging"],
          summary="Get all log forwarding profiles",
-         description="Retrieve all log forwarding profiles")
+         description="Retrieve all log forwarding profiles, with pagination")
 async def get_log_profiles(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by profile name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by profile name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all log forwarding profiles"""
+    """Get all log forwarding profiles with pagination"""
     parser = get_parser(config_name)
     profiles = parser.get_log_profiles()
     
     if name:
         profiles = [p for p in profiles if name.lower() in p.name.lower()]
     
-    return profiles
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(profiles, pagination)
 
 @app.get("/api/v1/configs/{config_name}/schedules",
-         response_model=List[Schedule],
+         response_model=PaginatedResponse,
          tags=["Logging"],
          summary="Get all schedules",
-         description="Retrieve all time-based schedules")
+         description="Retrieve all time-based schedules, with pagination")
 async def get_schedules(
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
-    name: Optional[str] = Query(None, description="Filter by schedule name (partial match)")
+    name: Optional[str] = Query(None, description="Filter by schedule name (partial match)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
-    """Get all schedules"""
+    """Get all schedules with pagination"""
     parser = get_parser(config_name)
     schedules = parser.get_schedules()
     
     if name:
         schedules = [s for s in schedules if name.lower() in s.name.lower()]
     
-    return schedules
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(schedules, pagination)
 
 # Object search endpoints
 @app.get("/api/v1/configs/{config_name}/search/by-xpath",

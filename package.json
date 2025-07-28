@@ -7,6 +7,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:device-groups": "jest tests/device-groups.test.js",
+    "test:pagination": "jest tests/pagination.test.js",
+    "test:pagination:verbose": "jest tests/pagination.test.js --verbose",
     "test:snapshot-update": "jest -u"
   },
   "devDependencies": {
