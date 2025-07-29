@@ -39,10 +39,52 @@ app = FastAPI(
     * **Log Profiles**: Access log forwarding profiles
     * **Schedules**: View time-based schedule configurations
     
-    ## Usage
+    ## Pagination
+    
+    All list endpoints support pagination to efficiently handle large datasets:
+    
+    ### Query Parameters
+    
+    * **page** (int): Page number, starting from 1 (default: 1)
+    * **page_size** (int): Number of items per page, 1-10000 (default: 500)
+    * **disable_paging** (bool): Return all results without pagination (default: false)
+    
+    ### Response Format
+    
+    Paginated responses include:
+    ```json
+    {
+        "items": [...],           // Array of items for current page
+        "total_items": 1500,      // Total number of items
+        "page": 1,                // Current page number
+        "page_size": 500,         // Items per page
+        "total_pages": 3,         // Total number of pages
+        "has_next": true,         // Whether there is a next page
+        "has_previous": false     // Whether there is a previous page
+    }
+    ```
+    
+    ### Example Usage
+    
+    ```bash
+    # Get first page with default page size (500 items)
+    GET /api/v1/configs/production/addresses
+    
+    # Get second page with 100 items per page
+    GET /api/v1/configs/production/addresses?page=2&page_size=100
+    
+    # Get all items without pagination
+    GET /api/v1/configs/production/addresses?disable_paging=true
+    
+    # Combine pagination with filtering
+    GET /api/v1/configs/production/addresses?name=server&page=1&page_size=50
+    ```
+    
+    ## Filtering
     
     All endpoints support filtering by name using the `name` query parameter.
     Some endpoints support tag-based filtering using the `tag` parameter.
+    Advanced filtering is available using the `filter[field]` syntax.
     
     ## Data Source
     
