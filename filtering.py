@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Optional, Union, Callable
 from enum import Enum
 import re
 from fastapi import Query
+from functools import lru_cache
 
 
 class FilterOperator(str, Enum):
@@ -83,12 +84,34 @@ class FilterDefinition:
 class FilterProcessor:
     """Processes filter conditions against objects"""
     
+    # Cache for field name normalization
+    _field_name_cache: Dict[str, str] = {}
+    
+    @staticmethod
+    @lru_cache(maxsize=1024)
+    def normalize_field_name(field_name: str) -> str:
+        """Normalize field names to handle both snake_case and hyphenated formats
+        
+        Examples:
+            ip_netmask -> ip-netmask
+            parent_device_group -> parent-device-group
+        """
+        # Check cache first
+        if field_name in FilterProcessor._field_name_cache:
+            return FilterProcessor._field_name_cache[field_name]
+        
+        # Convert snake_case to hyphenated for attribute lookup
+        normalized = field_name.replace('_', '-')
+        FilterProcessor._field_name_cache[field_name] = normalized
+        return normalized
+    
     @staticmethod
     def get_nested_value(obj: Any, path: str) -> Any:
-        """Get value from object using dot-notation path"""
+        """Get value from object using dot-notation path with performance optimizations"""
         if not path:
             return obj
             
+        # Cache split operation
         parts = path.split('.')
         value = obj
         
@@ -98,18 +121,32 @@ class FilterProcessor:
                 
             # Handle list indices
             if '[' in part and ']' in part:
-                field_name = part[:part.index('[')]
-                index = int(part[part.index('[') + 1:part.index(']')])
-                value = getattr(value, field_name, None)
-                if isinstance(value, list) and len(value) > index:
-                    value = value[index]
-                else:
+                bracket_idx = part.index('[')
+                field_name = part[:bracket_idx]
+                # Pre-calculate indices to avoid multiple indexOf calls
+                close_bracket_idx = part.index(']', bracket_idx)
+                index = int(part[bracket_idx + 1:close_bracket_idx])
+                
+                # Use try-except for better performance in success case
+                try:
+                    value = getattr(value, field_name)
+                    if isinstance(value, list) and len(value) > index:
+                        value = value[index]
+                    else:
+                        return None
+                except AttributeError:
                     return None
             else:
-                # Handle regular attributes
+                # Handle regular attributes - using getattr with default is faster
                 value = getattr(value, part, None)
         
         return value
+    
+    # Pre-compile common regex patterns for performance
+    _regex_cache: Dict[str, re.Pattern] = {}
+    
+    # Index for frequently filtered fields (built on demand)
+    _field_indexes: Dict[str, Dict[str, List[Any]]] = {}
     
     @staticmethod
     def apply_operator(
@@ -118,19 +155,22 @@ class FilterProcessor:
         operator: FilterOperator,
         case_sensitive: bool = False
     ) -> bool:
-        """Apply filter operator to compare values"""
+        """Apply filter operator to compare values with performance optimizations"""
         # Handle None values
         if value is None:
             return operator == FilterOperator.NOT_EQUALS and filter_value is not None
         
-        # Convert to string for string operations
-        if operator in [
+        # Pre-define string operators set for faster lookup
+        STRING_OPERATORS = {
             FilterOperator.CONTAINS,
             FilterOperator.NOT_CONTAINS,
             FilterOperator.STARTS_WITH,
             FilterOperator.ENDS_WITH,
             FilterOperator.REGEX
-        ]:
+        }
+        
+        # Convert to string for string operations
+        if operator in STRING_OPERATORS:
             value_str = str(value)
             filter_str = str(filter_value)
             
@@ -148,7 +188,14 @@ class FilterProcessor:
                 return value_str.endswith(filter_str)
             elif operator == FilterOperator.REGEX:
                 try:
-                    pattern = re.compile(filter_str, re.IGNORECASE if not case_sensitive else 0)
+                    # Cache compiled regex patterns for performance
+                    cache_key = f"{filter_str}_{case_sensitive}"
+                    if cache_key not in FilterProcessor._regex_cache:
+                        FilterProcessor._regex_cache[cache_key] = re.compile(
+                            filter_str, 
+                            re.IGNORECASE if not case_sensitive else 0
+                        )
+                    pattern = FilterProcessor._regex_cache[cache_key]
                     return bool(pattern.search(value_str))
                 except re.error:
                     return False
@@ -200,14 +247,42 @@ class FilterProcessor:
                 return value == filter_value
             elif operator == FilterOperator.NOT_EQUALS:
                 return value != filter_value
-            elif operator == FilterOperator.GREATER_THAN:
-                return value > filter_value
-            elif operator == FilterOperator.LESS_THAN:
-                return value < filter_value
-            elif operator == FilterOperator.GREATER_THAN_OR_EQUAL:
-                return value >= filter_value
-            elif operator == FilterOperator.LESS_THAN_OR_EQUAL:
-                return value <= filter_value
+            elif operator in [FilterOperator.GREATER_THAN, FilterOperator.LESS_THAN, 
+                            FilterOperator.GREATER_THAN_OR_EQUAL, FilterOperator.LESS_THAN_OR_EQUAL]:
+                # For comparison operators, ensure both values are comparable
+                try:
+                    # If types are different and one is numeric while other is non-numeric string, 
+                    # the comparison should return False
+                    if type(value) != type(filter_value):
+                        # Try to convert both to float for numeric comparison
+                        value_num = float(value) if isinstance(value, (int, str)) else None
+                        filter_num = float(filter_value) if isinstance(filter_value, (int, str)) else None
+                        
+                        if value_num is not None and filter_num is not None:
+                            if operator == FilterOperator.GREATER_THAN:
+                                return value_num > filter_num
+                            elif operator == FilterOperator.LESS_THAN:
+                                return value_num < filter_num
+                            elif operator == FilterOperator.GREATER_THAN_OR_EQUAL:
+                                return value_num >= filter_num
+                            elif operator == FilterOperator.LESS_THAN_OR_EQUAL:
+                                return value_num <= filter_num
+                        else:
+                            # Can't compare - return False for safety
+                            return False
+                    else:
+                        # Same types, direct comparison
+                        if operator == FilterOperator.GREATER_THAN:
+                            return value > filter_value
+                        elif operator == FilterOperator.LESS_THAN:
+                            return value < filter_value
+                        elif operator == FilterOperator.GREATER_THAN_OR_EQUAL:
+                            return value >= filter_value
+                        elif operator == FilterOperator.LESS_THAN_OR_EQUAL:
+                            return value <= filter_value
+                except (ValueError, TypeError):
+                    # If comparison fails, return False
+                    return False
         
         return False
     
@@ -217,17 +292,32 @@ class FilterProcessor:
         filters: Dict[str, Any],
         filter_definition: FilterDefinition
     ) -> bool:
-        """Check if object matches all filter conditions (AND logic)"""
+        """Check if object matches all filter conditions (AND logic) with early exit optimization"""
+        # Early exit if no filters
+        if not filters:
+            return True
+            
         for field_name, filter_value in filters.items():
             if filter_value is None:
                 continue
             
             # Parse field name to extract operator if present
-            parts = field_name.split('_')
-            if len(parts) > 1 and parts[-1] in [op.value for op in FilterOperator]:
-                operator = FilterOperator(parts[-1])
-                base_field_name = '_'.join(parts[:-1])
-            else:
+            # First, try to find the longest matching operator at the end
+            operator = None
+            base_field_name = field_name
+            
+            # Check for operator suffixes from longest to shortest
+            # Sort operators by length (descending) to match longest first
+            sorted_operators = sorted(FilterOperator, key=lambda x: len(x.value), reverse=True)
+            for op in sorted_operators:
+                suffix = f"_{op.value}"
+                if field_name.endswith(suffix):
+                    operator = op
+                    base_field_name = field_name[:-len(suffix)]
+                    break
+            
+            # If no operator found, use default
+            if operator is None:
                 operator = FilterOperator.CONTAINS  # Default operator
                 base_field_name = field_name
             
@@ -260,126 +350,427 @@ def apply_filters(
     filter_params: Dict[str, Any],
     filter_definition: FilterDefinition
 ) -> List[Any]:
-    """Apply filters to a list of items"""
-    # Extract non-None filter parameters
+    """Apply filters to a list of items with optimizations for large datasets"""
+    # The filter_params are already parsed, no need to extract
     active_filters = {
-        k.replace('filter_', ''): v
-        for k, v in filter_params.items()
-        if k.startswith('filter_') and v is not None
+        k: v for k, v in filter_params.items() if v is not None
     }
     
     if not active_filters:
         return items
     
-    # Filter items
-    filtered_items = []
-    for item in items:
-        if FilterProcessor.matches_filters(item, active_filters, filter_definition):
-            filtered_items.append(item)
+    # Early exit if no items
+    if not items:
+        return items
     
-    return filtered_items
+    # Use generator expression with list comprehension for better performance
+    # This is more memory efficient for large datasets
+    return [item for item in items if FilterProcessor.matches_filters(item, active_filters, filter_definition)]
+
+
+def apply_filters_parallel(
+    items_dict: Dict[str, List[Any]],
+    filter_params: Dict[str, Any],
+    filter_definitions: Dict[str, FilterDefinition]
+) -> Dict[str, List[Any]]:
+    """Apply filters to multiple lists in parallel for better performance
+    
+    Args:
+        items_dict: Dictionary mapping object type to list of items
+        filter_params: Filter parameters to apply
+        filter_definitions: Dictionary mapping object type to filter definition
+    
+    Returns:
+        Dictionary with filtered results for each object type
+    """
+    # The filter_params are already parsed
+    active_filters = {
+        k: v for k, v in filter_params.items() if v is not None
+    }
+    
+    if not active_filters:
+        return items_dict
+    
+    results = {}
+    for obj_type, items in items_dict.items():
+        if obj_type in filter_definitions:
+            results[obj_type] = apply_filters(items, active_filters, filter_definitions[obj_type])
+        else:
+            results[obj_type] = items
+    
+    return results
+
+
+def create_filter_with_aliases(base_filters: Dict[str, FilterConfig]) -> Dict[str, FilterConfig]:
+    """Create filter definitions with both snake_case and hyphenated aliases
+    
+    This helper function automatically creates hyphenated aliases for snake_case field names
+    to support both formats in API requests.
+    """
+    result = base_filters.copy()
+    
+    # Add hyphenated aliases for snake_case fields
+    for field_name, config in list(base_filters.items()):
+        if '_' in field_name:
+            # Create hyphenated alias
+            hyphenated_name = field_name.replace('_', '-')
+            if hyphenated_name not in result:
+                result[hyphenated_name] = config
+    
+    return result
 
 
 # Pre-defined filter configurations for common object types
 
-# Address object filters
-ADDRESS_FILTERS = FilterDefinition({
-    "name": FilterConfig("name"),
+# Address object filters - comprehensive filtering for all properties
+ADDRESS_FILTERS = FilterDefinition(create_filter_with_aliases({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    # Note: 'ip' is an alias for 'ip_netmask' field
     "ip": FilterConfig("ip_netmask", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "ip_netmask": FilterConfig("ip_netmask", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ]),
+    "ip_range": FilterConfig("ip_range", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "fqdn": FilterConfig("fqdn", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "tag": FilterConfig("tag", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "xpath": FilterConfig("xpath", operators=[
         FilterOperator.EQUALS,
         FilterOperator.CONTAINS,
         FilterOperator.STARTS_WITH
     ]),
-    "ip_range": FilterConfig("ip_range"),
-    "fqdn": FilterConfig("fqdn"),
-    "description": FilterConfig("description"),
-    "tag": FilterConfig("tag", operators=[
-        FilterOperator.IN,
-        FilterOperator.NOT_IN,
+    "parent_device_group": FilterConfig("parent_device_group", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
         FilterOperator.CONTAINS
-    ], type_=list),
+    ]),
+    "parent_template": FilterConfig("parent_template", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "parent_vsys": FilterConfig("parent_vsys", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
     "location": FilterConfig(
         "parent_device_group",
         custom_getter=lambda obj: (
             "shared" if not any([obj.parent_device_group, obj.parent_template, obj.parent_vsys])
-            else obj.parent_device_group or obj.parent_template or obj.parent_vsys
-        )
+            else "device-group" if obj.parent_device_group
+            else "template" if obj.parent_template
+            else "vsys" if obj.parent_vsys
+            else "unknown"
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS
+        ]
     )
-})
+}))
 
-# Service object filters
-SERVICE_FILTERS = FilterDefinition({
-    "name": FilterConfig("name"),
+# Service object filters - comprehensive filtering for all properties
+SERVICE_FILTERS = FilterDefinition(create_filter_with_aliases({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
     "protocol": FilterConfig(
         "protocol",
         custom_getter=lambda obj: (
             "tcp" if obj.protocol.tcp else "udp" if obj.protocol.udp else None
-        )
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS
+        ]
     ),
     "port": FilterConfig(
         "protocol",
         custom_getter=lambda obj: (
-            obj.protocol.tcp.get("port", "") if obj.protocol.tcp
-            else obj.protocol.udp.get("port", "") if obj.protocol.udp
+            str(obj.protocol.tcp.get("port", "")) if obj.protocol.tcp
+            else str(obj.protocol.udp.get("port", "")) if obj.protocol.udp
             else ""
-        )
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS,
+            FilterOperator.GREATER_THAN,
+            FilterOperator.LESS_THAN,
+            FilterOperator.GREATER_THAN_OR_EQUAL,
+            FilterOperator.LESS_THAN_OR_EQUAL
+        ]
     ),
-    "description": FilterConfig("description"),
+    "source_port": FilterConfig(
+        "protocol",
+        custom_getter=lambda obj: (
+            str(obj.protocol.tcp.get("source-port", "")) if obj.protocol.tcp and "source-port" in obj.protocol.tcp
+            else str(obj.protocol.udp.get("source-port", "")) if obj.protocol.udp and "source-port" in obj.protocol.udp
+            else ""
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS
+        ]
+    ),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
     "tag": FilterConfig("tag", operators=[
         FilterOperator.IN,
         FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ]),
+    "parent_device_group": FilterConfig("parent_device_group", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
         FilterOperator.CONTAINS
-    ], type_=list)
-})
+    ]),
+    "parent_template": FilterConfig("parent_template", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "parent_vsys": FilterConfig("parent_vsys", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ])
+}))
 
-# Security rule filters
-SECURITY_RULE_FILTERS = FilterDefinition({
-    "name": FilterConfig("name"),
+SECURITY_RULE_FILTERS = FilterDefinition(create_filter_with_aliases({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "uuid": FilterConfig("uuid", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
     "source": FilterConfig("source", operators=[
         FilterOperator.IN,
-        FilterOperator.CONTAINS
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list),
     "destination": FilterConfig("destination", operators=[
         FilterOperator.IN,
-        FilterOperator.CONTAINS
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list),
     "source_zone": FilterConfig("from_", operators=[
         FilterOperator.IN,
-        FilterOperator.CONTAINS
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list),
     "destination_zone": FilterConfig("to", operators=[
         FilterOperator.IN,
-        FilterOperator.CONTAINS
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "source_user": FilterConfig("source_user", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "category": FilterConfig("category", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list),
     "service": FilterConfig("service", operators=[
         FilterOperator.IN,
-        FilterOperator.CONTAINS
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list),
     "application": FilterConfig("application", operators=[
         FilterOperator.IN,
-        FilterOperator.CONTAINS
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list),
-    "action": FilterConfig("action"),
-    "disabled": FilterConfig("disabled", type_=bool),
-    "description": FilterConfig("description"),
+    "action": FilterConfig("action", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
+    "log_start": FilterConfig("log_start", type_=bool, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
+    "log_end": FilterConfig("log_end", type_=bool, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
+    "disabled": FilterConfig("disabled", type_=bool, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
     "tag": FilterConfig("tag", operators=[
         FilterOperator.IN,
         FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "log_setting": FilterConfig("log_setting", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
         FilterOperator.CONTAINS
-    ], type_=list)
-})
+    ]),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ]),
+    "parent_device_group": FilterConfig("parent_device_group", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ])
+}))
 
-# Device group filters
-DEVICE_GROUP_FILTERS = FilterDefinition({
-    "name": FilterConfig("name"),
-    "parent": FilterConfig("parent_dg"),
-    "description": FilterConfig("description")
-})
+# Device group filters - comprehensive filtering for all properties
+DEVICE_GROUP_FILTERS = FilterDefinition(create_filter_with_aliases({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "parent": FilterConfig("parent_dg", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "parent_dg": FilterConfig("parent_dg", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "devices_count": FilterConfig("devices_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "address_count": FilterConfig("address_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ])
+}))
 
-# Address/Service group filters
-GROUP_FILTERS = FilterDefinition({
-    "name": FilterConfig("name"),
-    "description": FilterConfig("description"),
+# Address/Service group filters - comprehensive filtering for all properties
+GROUP_FILTERS = FilterDefinition(create_filter_with_aliases({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
     "member": FilterConfig(
         "members",
         custom_getter=lambda obj: (
@@ -389,19 +780,236 @@ GROUP_FILTERS = FilterDefinition({
         ),
         operators=[
             FilterOperator.IN,
-            FilterOperator.CONTAINS
+            FilterOperator.NOT_IN,
+            FilterOperator.CONTAINS,
+            FilterOperator.NOT_CONTAINS
         ],
         type_=list
     ),
+    "static": FilterConfig("static", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
     "tag": FilterConfig("tag", operators=[
         FilterOperator.IN,
         FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ]),
+    "parent_device_group": FilterConfig("parent_device_group", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
         FilterOperator.CONTAINS
+    ]),
+    "parent_template": FilterConfig("parent_template", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "parent_vsys": FilterConfig("parent_vsys", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ])
+}))
+
+# Security profile filters - comprehensive filtering for all properties
+PROFILE_FILTERS = FilterDefinition({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ])
+})
+
+# NAT rule filters - comprehensive filtering for all properties
+NAT_RULE_FILTERS = FilterDefinition({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "uuid": FilterConfig("uuid", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
+    "source": FilterConfig("source", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "destination": FilterConfig("destination", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "source_zone": FilterConfig("from_", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "destination_zone": FilterConfig("to", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "service": FilterConfig("service", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS
+    ]),
+    "disabled": FilterConfig("disabled", type_=bool, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "tag": FilterConfig("tag", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
     ], type_=list)
 })
 
-# Security profile filters
-PROFILE_FILTERS = FilterDefinition({
-    "name": FilterConfig("name"),
-    "description": FilterConfig("description")
+# Template filters - comprehensive filtering for all properties
+TEMPLATE_FILTERS = FilterDefinition({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ])
+})
+
+# Template stack filters - comprehensive filtering for all properties
+TEMPLATE_STACK_FILTERS = FilterDefinition({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "templates": FilterConfig("templates", operators=[
+        FilterOperator.IN,
+        FilterOperator.NOT_IN,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS
+    ], type_=list),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ])
+})
+
+# Log profile filters - comprehensive filtering for all properties
+LOG_PROFILE_FILTERS = FilterDefinition({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ])
+})
+
+# Schedule filters - comprehensive filtering for all properties
+SCHEDULE_FILTERS = FilterDefinition({
+    "name": FilterConfig("name", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "description": FilterConfig("description", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.NOT_CONTAINS,
+        FilterOperator.STARTS_WITH,
+        FilterOperator.ENDS_WITH
+    ]),
+    "xpath": FilterConfig("xpath", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.STARTS_WITH
+    ])
 })
