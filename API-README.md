@@ -83,17 +83,164 @@ Most endpoints support basic filtering using query parameters:
 - `location` - Filter by location (for addresses)
 
 ### Advanced Filtering
-Use the `filter[field]` syntax for advanced filtering:
+Use the `filter[field]` or `filter[field][operator]` syntax for advanced filtering.
 
+#### Supported Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `eq` | Exact match | `filter[name][eq]=web-server-01` |
+| `ne` | Not equals | `filter[action][ne]=deny` |
+| `contains` | Contains substring (default) | `filter[description][contains]=production` |
+| `not_contains` | Does not contain | `filter[tag][not_contains]=test` |
+| `starts_with` | Starts with prefix | `filter[name][starts_with]=web` |
+| `ends_with` | Ends with suffix | `filter[name][ends_with]=01` |
+| `in` | Value in list | `filter[source_zone][in]=trust` |
+| `not_in` | Value not in list | `filter[tag][not_in]=deprecated` |
+| `gt` | Greater than | `filter[port][gt]=1024` |
+| `lt` | Less than | `filter[port][lt]=1024` |
+| `gte` | Greater than or equal | `filter[devices_count][gte]=5` |
+| `lte` | Less than or equal | `filter[address_count][lte]=100` |
+| `regex` | Regular expression | `filter[name][regex]=^web-.*-prod$` |
+
+#### Filtering Examples by Object Type
+
+##### Address Objects
 ```bash
-# Filter addresses by IP
+# Filter by IP address
 curl "http://localhost:8000/api/v1/configs/production/addresses?filter[ip]=10.0.0"
 
-# Filter with operators
-curl "http://localhost:8000/api/v1/configs/production/addresses?filter[name][starts_with]=web"
+# Filter by IP with exact match
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[ip_netmask][eq]=10.0.0.1/32"
 
-# Multiple filters
-curl "http://localhost:8000/api/v1/configs/production/addresses?filter[tag]=production&filter[ip]=10.0"
+# Filter by IP range
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[ip_range][contains]=10.10.10"
+
+# Filter by FQDN
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[fqdn][ends_with]=.example.com"
+
+# Filter by multiple tags
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[tag][in]=production&filter[tag][not_in]=deprecated"
+
+# Filter by location type
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[location][eq]=device-group"
+
+# Complex filtering
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[ip][starts_with]=192.168&filter[tag][contains]=web&filter[description][not_contains]=test"
+```
+
+##### Service Objects
+```bash
+# Filter by protocol
+curl "http://localhost:8000/api/v1/configs/production/services?filter[protocol][eq]=tcp"
+
+# Filter by port range
+curl "http://localhost:8000/api/v1/configs/production/services?filter[port][gte]=8000&filter[port][lte]=9000"
+
+# Filter services on well-known ports
+curl "http://localhost:8000/api/v1/configs/production/services?filter[port][lt]=1024"
+
+# Filter by source port
+curl "http://localhost:8000/api/v1/configs/production/services?filter[source_port][contains]=1024-65535"
+```
+
+##### Security Rules
+```bash
+# Filter by action
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[action][eq]=deny"
+
+# Filter by source zone
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[source_zone][in]=trust"
+
+# Filter by destination zone
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[destination_zone][contains]=untrust"
+
+# Filter by application
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[application][in]=ssl,web-browsing"
+
+# Filter by disabled status
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[disabled][eq]=false"
+
+# Filter by logging settings
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[log_start][eq]=true&filter[log_end][eq]=true"
+
+# Complex security rule filter
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[source_zone][in]=trust&filter[destination_zone][in]=untrust&filter[action][eq]=allow&filter[application][not_in]=bittorrent"
+```
+
+##### Device Groups
+```bash
+# Filter by parent device group
+curl "http://localhost:8000/api/v1/configs/production/device-groups?filter[parent_dg][eq]=headquarters"
+
+# Filter by device count
+curl "http://localhost:8000/api/v1/configs/production/device-groups?filter[devices_count][gte]=10"
+
+# Filter by address object count
+curl "http://localhost:8000/api/v1/configs/production/device-groups?filter[address_count][lt]=100"
+
+# Filter by description
+curl "http://localhost:8000/api/v1/configs/production/device-groups?filter[description][contains]=branch"
+```
+
+##### Address/Service Groups
+```bash
+# Filter by member
+curl "http://localhost:8000/api/v1/configs/production/address-groups?filter[member][contains]=web-server"
+
+# Filter by static members
+curl "http://localhost:8000/api/v1/configs/production/address-groups?filter[static][in]=db-server-01"
+
+# Filter service groups by member
+curl "http://localhost:8000/api/v1/configs/production/service-groups?filter[member][contains]=tcp-443"
+```
+
+##### Templates and Template Stacks
+```bash
+# Filter templates by description
+curl "http://localhost:8000/api/v1/configs/production/templates?filter[description][contains]=branch"
+
+# Filter template stacks by member templates
+curl "http://localhost:8000/api/v1/configs/production/template-stacks?filter[templates][contains]=base-template"
+```
+
+#### Special Filtering Cases
+
+##### Regular Expression Filtering
+```bash
+# Find all addresses with names matching pattern
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[name][regex]=^(web|app)-server-\d{2}$"
+
+# Find services on common web ports
+curl "http://localhost:8000/api/v1/configs/production/services?filter[port][regex]=(80|443|8080|8443)"
+```
+
+##### List Operations
+```bash
+# Find addresses with any of the specified tags
+curl "http://localhost:8000/api/v1/configs/production/addresses?filter[tag][in]=production,staging"
+
+# Find rules that don't have specific applications
+curl "http://localhost:8000/api/v1/configs/production/security-policies?filter[application][not_in]=bittorrent,tor"
+```
+
+##### Combining Filters
+All filters use AND logic when combined:
+```bash
+# Find production web servers in specific IP range
+curl "http://localhost:8000/api/v1/configs/production/addresses?\
+filter[ip][starts_with]=192.168.1&\
+filter[tag][contains]=production&\
+filter[tag][contains]=web&\
+filter[description][not_contains]=test"
+
+# Find allow rules from trust to untrust for web traffic
+curl "http://localhost:8000/api/v1/configs/production/security-policies?\
+filter[source_zone][in]=trust&\
+filter[destination_zone][in]=untrust&\
+filter[action][eq]=allow&\
+filter[application][in]=web-browsing,ssl&\
+filter[disabled][eq]=false"
 ```
 
 ## Configuration Management

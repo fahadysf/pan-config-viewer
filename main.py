@@ -17,7 +17,9 @@ from models import (
 from filtering import (
     apply_filters, FilterDefinition, FilterConfig, FilterOperator,
     ADDRESS_FILTERS, SERVICE_FILTERS, SECURITY_RULE_FILTERS,
-    DEVICE_GROUP_FILTERS, GROUP_FILTERS, PROFILE_FILTERS
+    DEVICE_GROUP_FILTERS, GROUP_FILTERS, PROFILE_FILTERS,
+    NAT_RULE_FILTERS, TEMPLATE_FILTERS, TEMPLATE_STACK_FILTERS,
+    LOG_PROFILE_FILTERS, SCHEDULE_FILTERS
 )
 
 # Initialize FastAPI app with comprehensive documentation
@@ -222,19 +224,39 @@ def paginate_results(items: List, pagination: PaginationParams) -> Dict:
     }
 
 def parse_filter_params(params: Dict[str, Any]) -> Dict[str, Any]:
-    """Parse filter parameters from request"""
+    """Parse filter parameters from request with validation"""
     filters = {}
     for key, value in params.items():
         if key.startswith('filter[') and key.endswith(']') and value is not None:
-            # Extract field name from filter[field] or filter[field][op]
-            filter_key = key[7:-1]  # Remove 'filter[' and ']'
-            if '][' in filter_key:
-                # Handle filter[field][op] format
-                field, op = filter_key.split('][', 1)
-                filters[f"{field}_{op}"] = value
-            else:
-                # Handle filter[field] format
-                filters[filter_key] = value
+            try:
+                # Extract field name from filter[field] or filter[field][op]
+                filter_key = key[7:-1]  # Remove 'filter[' and ']'
+                
+                # Validate filter key format
+                if not filter_key:
+                    raise HTTPException(status_code=400, detail=f"Invalid filter format: {key}")
+                
+                if '][' in filter_key:
+                    # Handle filter[field][op] format
+                    parts = filter_key.split('][', 1)
+                    if len(parts) != 2 or not parts[0] or not parts[1]:
+                        raise HTTPException(status_code=400, detail=f"Invalid filter format: {key}")
+                    field, op = parts
+                    
+                    # Validate operator
+                    valid_operators = [e.value for e in FilterOperator]
+                    if op not in valid_operators:
+                        raise HTTPException(
+                            status_code=400, 
+                            detail=f"Invalid filter operator: {op}. Valid operators are: {', '.join(valid_operators)}"
+                        )
+                    
+                    filters[f"{field}_{op}"] = value
+                else:
+                    # Handle filter[field] format
+                    filters[filter_key] = value
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=f"Error parsing filter {key}: {str(e)}")
     return filters
 
 @app.get("/", include_in_schema=False)
@@ -297,19 +319,43 @@ async def get_addresses(
 ):
     """Get address objects with optional filtering and pagination
     
-    Supports advanced filtering with the following parameters:
-    - filter[name]: Filter by name (contains)
-    - filter[ip]: Filter by IP address (contains)
-    - filter[ip_range]: Filter by IP range
-    - filter[fqdn]: Filter by FQDN
-    - filter[description]: Filter by description
-    - filter[tag]: Filter by tags
-    - filter[location]: Filter by location
+    Supports comprehensive filtering on all address properties:
     
-    You can also use operators:
-    - filter[name][eq]: Exact match
-    - filter[name][starts_with]: Starts with
-    - filter[ip][contains]: Contains (default)
+    **Basic filters:**
+    - name: Filter by name (partial match)
+    - tag: Filter by tag
+    - location: Filter by location (all/shared/device-group/template/vsys)
+    
+    **Advanced filters using filter[property] syntax:**
+    - filter[name]: Name filtering with operators
+    - filter[ip]: IP address filtering (alias for ip_netmask)
+    - filter[ip_netmask]: IP address with netmask filtering
+    - filter[ip_range]: IP range filtering
+    - filter[fqdn]: Fully qualified domain name filtering
+    - filter[description]: Description filtering
+    - filter[tag]: Tag filtering (supports list operations)
+    - filter[xpath]: XPath location filtering
+    - filter[parent_device_group]: Parent device group filtering
+    - filter[parent_template]: Parent template filtering
+    - filter[parent_vsys]: Parent vsys filtering
+    - filter[location]: Location type filtering (shared/device-group/template/vsys)
+    
+    **Supported operators:**
+    - [eq]: Exact match (e.g., filter[name][eq]=web-server)
+    - [ne]: Not equals
+    - [contains]: Contains substring (default for most fields)
+    - [not_contains]: Does not contain
+    - [starts_with]: Starts with prefix
+    - [ends_with]: Ends with suffix
+    - [in]: Value in list (for tags)
+    - [not_in]: Value not in list
+    
+    **Examples:**
+    - filter[name][starts_with]=web
+    - filter[ip][contains]=10.0.0
+    - filter[tag][in]=production
+    - filter[description][not_contains]=test
+    - filter[parent_device_group][eq]=branch-offices
     """
     parser = get_parser(config_name)
     
@@ -376,11 +422,33 @@ async def get_address_groups(
 ):
     """Get all shared address groups with optional filtering and pagination
     
-    Supports advanced filtering with the following parameters:
-    - filter[name]: Filter by group name
-    - filter[description]: Filter by description
-    - filter[member]: Filter by member addresses
-    - filter[tag]: Filter by tags
+    Supports comprehensive filtering on all address group properties:
+    
+    **Basic filters:**
+    - name: Filter by group name (partial match)
+    - tag: Filter by tag
+    
+    **Advanced filters using filter[property] syntax:**
+    - filter[name]: Name filtering with operators
+    - filter[description]: Description filtering
+    - filter[member]: Filter by member addresses (supports list operations)
+    - filter[static]: Filter by static members
+    - filter[tag]: Tag filtering (supports list operations)
+    - filter[xpath]: XPath location filtering
+    - filter[parent_device_group]: Parent device group filtering
+    - filter[parent_template]: Parent template filtering
+    - filter[parent_vsys]: Parent vsys filtering
+    
+    **Supported operators:**
+    - [eq], [ne]: Exact match / not equals
+    - [contains], [not_contains]: Contains / does not contain
+    - [starts_with], [ends_with]: String prefix/suffix matching
+    - [in], [not_in]: List membership operations
+    
+    **Examples:**
+    - filter[member][contains]=web-server
+    - filter[tag][in]=production
+    - filter[description][starts_with]=DMZ
     """
     parser = get_parser(config_name)
     groups = parser.get_shared_address_groups()
@@ -434,12 +502,36 @@ async def get_services(
 ):
     """Get all shared service objects with optional filtering and pagination
     
-    Supports advanced filtering with the following parameters:
-    - filter[name]: Filter by name (contains)
-    - filter[protocol]: Filter by protocol (tcp/udp)
-    - filter[port]: Filter by port number
-    - filter[description]: Filter by description
-    - filter[tag]: Filter by tags
+    Supports comprehensive filtering on all service properties:
+    
+    **Basic filters:**
+    - name: Filter by service name (partial match)
+    - protocol: Filter by protocol (tcp/udp)
+    
+    **Advanced filters using filter[property] syntax:**
+    - filter[name]: Name filtering with operators
+    - filter[protocol]: Protocol filtering (tcp/udp)
+    - filter[port]: Port number filtering (supports numeric comparisons)
+    - filter[source_port]: Source port filtering
+    - filter[description]: Description filtering
+    - filter[tag]: Tag filtering (supports list operations)
+    - filter[xpath]: XPath location filtering
+    - filter[parent_device_group]: Parent device group filtering
+    - filter[parent_template]: Parent template filtering
+    - filter[parent_vsys]: Parent vsys filtering
+    
+    **Supported operators:**
+    - [eq], [ne]: Exact match / not equals
+    - [contains], [not_contains]: Contains / does not contain
+    - [starts_with], [ends_with]: String prefix/suffix matching
+    - [gt], [lt], [gte], [lte]: Numeric comparisons (for port numbers)
+    - [in], [not_in]: List membership operations
+    
+    **Examples:**
+    - filter[port][gte]=1024
+    - filter[port][lte]=49151
+    - filter[protocol][eq]=tcp
+    - filter[tag][contains]=web
     """
     parser = get_parser(config_name)
     services = parser.get_shared_services()
@@ -730,10 +822,32 @@ async def get_device_groups(
 ):
     """Get all device groups with counts of child objects and pagination
     
-    Supports advanced filtering with the following parameters:
-    - filter[name]: Filter by device group name
-    - filter[parent]: Filter by parent device group
-    - filter[description]: Filter by description
+    Supports comprehensive filtering on all device group properties:
+    
+    **Basic filters:**
+    - name: Filter by device group name (partial match)
+    - parent: Filter by parent device group
+    
+    **Advanced filters using filter[property] syntax:**
+    - filter[name]: Name filtering with operators
+    - filter[parent]: Parent device group filtering (alias for parent_dg)
+    - filter[parent_dg]: Parent device group filtering
+    - filter[description]: Description filtering
+    - filter[devices_count]: Filter by device count (numeric comparisons)
+    - filter[address_count]: Filter by address object count (numeric comparisons)
+    - filter[xpath]: XPath location filtering
+    
+    **Supported operators:**
+    - [eq], [ne]: Exact match / not equals
+    - [contains], [not_contains]: Contains / does not contain
+    - [starts_with], [ends_with]: String prefix/suffix matching
+    - [gt], [lt], [gte], [lte]: Numeric comparisons (for count fields)
+    
+    **Examples:**
+    - filter[parent_dg][eq]=headquarters
+    - filter[devices_count][gte]=10
+    - filter[address_count][lt]=100
+    - filter[description][contains]=branch
     """
     parser = get_parser(config_name)
     groups = parser.get_device_group_summaries()
@@ -947,18 +1061,46 @@ async def get_all_security_policies(
 ):
     """Get all security policies from all device groups with pagination
     
-    Supports advanced filtering with the following parameters:
-    - filter[name]: Filter by rule name
-    - filter[source]: Filter by source addresses
-    - filter[destination]: Filter by destination addresses
-    - filter[source_zone]: Filter by source zones
-    - filter[destination_zone]: Filter by destination zones
-    - filter[service]: Filter by services
-    - filter[application]: Filter by applications
-    - filter[action]: Filter by action (allow/deny/drop)
-    - filter[disabled]: Filter by disabled status (true/false)
-    - filter[description]: Filter by description
-    - filter[tag]: Filter by tags
+    Supports comprehensive filtering on all security rule properties:
+    
+    **Basic filters:**
+    - name: Filter by rule name (partial match)
+    - device_group: Filter by device group name
+    - action: Filter by action (allow/deny)
+    
+    **Advanced filters using filter[property] syntax:**
+    - filter[name]: Name filtering with operators
+    - filter[uuid]: UUID filtering
+    - filter[source]: Source address filtering (list operations)
+    - filter[destination]: Destination address filtering (list operations)
+    - filter[source_zone]: Source zone filtering (list operations)
+    - filter[destination_zone]: Destination zone filtering (list operations)
+    - filter[source_user]: Source user filtering (list operations)
+    - filter[category]: URL category filtering (list operations)
+    - filter[service]: Service filtering (list operations)
+    - filter[application]: Application filtering (list operations)
+    - filter[action]: Action filtering (allow/deny/drop/reset-client/reset-server/reset-both)
+    - filter[log_start]: Log at session start (true/false)
+    - filter[log_end]: Log at session end (true/false)
+    - filter[disabled]: Rule disabled status (true/false)
+    - filter[description]: Description filtering
+    - filter[tag]: Tag filtering (list operations)
+    - filter[log_setting]: Log forwarding profile filtering
+    - filter[xpath]: XPath location filtering
+    - filter[parent_device_group]: Parent device group filtering
+    
+    **Supported operators:**
+    - [eq], [ne]: Exact match / not equals
+    - [contains], [not_contains]: Contains / does not contain
+    - [starts_with], [ends_with]: String prefix/suffix matching
+    - [in], [not_in]: List membership operations
+    
+    **Examples:**
+    - filter[source][contains]=10.0.0.0
+    - filter[destination_zone][in]=untrust
+    - filter[application][not_in]=ssl,web-browsing
+    - filter[action][eq]=deny
+    - filter[disabled][eq]=false
     """
     parser = get_parser(config_name)
     
@@ -1018,12 +1160,7 @@ async def get_templates(
     # Apply advanced filters
     filter_params = parse_filter_params(dict(request.query_params))
     if filter_params:
-        # Use a simple filter definition for templates
-        template_filters = FilterDefinition({
-            "name": FilterConfig("name"),
-            "description": FilterConfig("description")
-        })
-        templates = apply_filters(templates, filter_params, template_filters)
+        templates = apply_filters(templates, filter_params, TEMPLATE_FILTERS)
     
     # Apply pagination
     pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
@@ -1069,16 +1206,7 @@ async def get_template_stacks(
     # Apply advanced filters
     filter_params = parse_filter_params(dict(request.query_params))
     if filter_params:
-        # Use a simple filter definition for template stacks
-        stack_filters = FilterDefinition({
-            "name": FilterConfig("name"),
-            "description": FilterConfig("description"),
-            "template": FilterConfig("templates", operators=[
-                FilterOperator.IN,
-                FilterOperator.CONTAINS
-            ], type_=list)
-        })
-        stacks = apply_filters(stacks, filter_params, stack_filters)
+        stacks = apply_filters(stacks, filter_params, TEMPLATE_STACK_FILTERS)
     
     # Apply pagination
     pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
@@ -1125,7 +1253,7 @@ async def get_log_profiles(
     # Apply advanced filters
     filter_params = parse_filter_params(dict(request.query_params))
     if filter_params:
-        profiles = apply_filters(profiles, filter_params, PROFILE_FILTERS)
+        profiles = apply_filters(profiles, filter_params, LOG_PROFILE_FILTERS)
     
     # Apply pagination
     pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
@@ -1154,12 +1282,7 @@ async def get_schedules(
     # Apply advanced filters
     filter_params = parse_filter_params(dict(request.query_params))
     if filter_params:
-        # Use a simple filter definition for schedules
-        schedule_filters = FilterDefinition({
-            "name": FilterConfig("name"),
-            "description": FilterConfig("description")
-        })
-        schedules = apply_filters(schedules, filter_params, schedule_filters)
+        schedules = apply_filters(schedules, filter_params, SCHEDULE_FILTERS)
     
     # Apply pagination
     pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
