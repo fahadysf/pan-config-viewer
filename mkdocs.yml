@@ -8,7 +8,6 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  custom_dir: docs/overrides
   language: en
   features:
     - navigation.instant
@@ -70,26 +69,6 @@ plugins:
       separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
       lang:
         - en
-  - minify:
-      minify_html: true
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            show_source: true
-            show_root_heading: true
-            show_category_heading: true
-            show_symbol_type_toc: true
-            show_symbol_type_heading: true
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: iso_date
-  - tags:
-      tags_file: tags.md
-  - social:
-      cards_layout_options:
-        background_color: "#1e2129"
-        color: "#ffffff"
 
 markdown_extensions:
   - abbr
@@ -124,9 +103,7 @@ markdown_extensions:
       repo: pan-config-viewer
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets:
-      auto_append:
-        - includes/abbreviations.md
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -155,99 +132,25 @@ extra:
     provider: mike
     default: stable
 
-extra_css:
-  - stylesheets/extra.css
+# extra_css:
+#   - stylesheets/extra.css
 
-extra_javascript:
-  - javascripts/extra.js
+# extra_javascript:
+#   - javascripts/extra.js
 
 nav:
-  - Home:
-    - index.md
-    - getting-started.md
-    - installation.md
-    - configuration.md
+  - Home: index.md
   
-  - Quick Start:
-    - quickstart/index.md
-    - quickstart/basic-usage.md
-    - quickstart/authentication.md
-    - quickstart/first-requests.md
-  
-  - API Guide:
-    - api/index.md
-    - api/overview.md
-    - api/authentication.md
-    - api/pagination.md
-    - api/error-handling.md
+  - Quick Start: quickstart/index.md
     
-  - Filtering:
-    - guides/filtering/index.md
-    - guides/filtering/operators.md
-    - guides/filtering/syntax.md
-    - guides/filtering/advanced.md
-    - guides/filtering/performance.md
+  - Filtering Guide:
+    - Overview: guides/filtering/index.md
+    - All Operators: guides/filtering/operators.md
     
-  - Endpoints:
-    - api/endpoints/index.md
-    - Address Objects:
-      - api/endpoints/addresses.md
-      - api/endpoints/address-groups.md
-    - Service Objects:
-      - api/endpoints/services.md
-      - api/endpoints/service-groups.md
-    - Security Policies:
-      - api/endpoints/security-rules.md
-      - api/endpoints/nat-rules.md
-    - Device Management:
-      - api/endpoints/device-groups.md
-      - api/endpoints/templates.md
-      - api/endpoints/template-stacks.md
-    - Security Profiles:
-      - api/endpoints/security-profiles.md
-      - api/endpoints/log-profiles.md
-    - Other Objects:
-      - api/endpoints/schedules.md
-      - api/endpoints/tags.md
-      - api/endpoints/zones.md
-      - api/endpoints/applications.md
-  
-  - Object Reference:
-    - api/objects/index.md
-    - api/objects/address.md
-    - api/objects/service.md
-    - api/objects/security-rule.md
-    - api/objects/nat-rule.md
-    - api/objects/device-group.md
+  - API Endpoints:
+    - Address Objects: api/endpoints/addresses.md
+    - Service Objects: api/endpoints/services.md
+    - Security Rules: api/endpoints/security-rules.md
   
   - Examples:
-    - examples/index.md
-    - examples/basic-queries.md
-    - examples/complex-filters.md
-    - examples/pagination.md
-    - examples/bulk-operations.md
-    - examples/python.md
-    - examples/javascript.md
-    - examples/curl.md
-    - examples/postman.md
-  
-  - Advanced:
-    - guides/performance.md
-    - guides/caching.md
-    - guides/rate-limiting.md
-    - guides/webhooks.md
-    - guides/monitoring.md
-  
-  - Reference:
-    - reference/index.md
-    - reference/api-spec.md
-    - reference/changelog.md
-    - reference/migration.md
-    - reference/troubleshooting.md
-    - reference/faq.md
-  
-  - Developer:
-    - developer/contributing.md
-    - developer/architecture.md
-    - developer/testing.md
-    - developer/deployment.md
+    - Complex Filters: examples/complex-filters.md
