@@ -125,12 +125,6 @@ extra:
       link: https://github.com/fahadysf/pan-config-viewer
     - icon: fontawesome/brands/docker
       link: https://hub.docker.com/r/fahadysf/pan-config-viewer
-  analytics:
-    provider: google
-    property: G-XXXXXXXXXX
-  version:
-    provider: mike
-    default: stable
 
 # extra_css:
 #   - stylesheets/extra.css
