@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/fahadysf/pan-config-viewer)
-[![Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)](https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[API Version](https://img.shields.io/badge/API-v1.0.0-blue)(https://github.com/fahadysf/pan-config-viewer)
+[Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)(https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
+[License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)(https://opensource.org/licenses/Apache-2.0)
 
 **A powerful REST API for querying and analyzing PAN-OS Panorama configurations**
 
