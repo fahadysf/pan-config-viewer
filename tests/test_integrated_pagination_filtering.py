@@ -238,12 +238,12 @@ class TestIntegratedPaginationFiltering:
         data = response.json()
         assert len(data["items"]) == 0
         
-        # Test invalid filter operator (should be ignored)
+        # Test invalid filter operator (should return 400)
         response = real_client.get(
             "/api/v1/configs/pan-bkp-202507151414/addresses?"
             "filter[name][invalid_op]=test"
         )
-        assert response.status_code == 200  # Should not error
+        assert response.status_code == 400  # Should return error for invalid operator
         
         # Test page_size limits
         response = real_client.get(
@@ -360,9 +360,14 @@ class TestIntegratedPaginationFiltering:
         # Should have collected all items
         assert len(collected_items) == total_without_pagination
         
-        # Check for duplicates
-        names = [item["name"] for item in collected_items]
-        assert len(names) == len(set(names)), "Found duplicate items across pages"
+        # Check that collected items match unpaginated items
+        # Sort both lists by name for comparison (since order might differ)
+        collected_sorted = sorted(collected_items, key=lambda x: x["name"])
+        all_sorted = sorted(all_items, key=lambda x: x["name"])
+        
+        # Compare the sorted lists (allows duplicates in source data)
+        for i, (collected, original) in enumerate(zip(collected_sorted, all_sorted)):
+            assert collected["name"] == original["name"], f"Mismatch at index {i}"
     
     def test_special_characters_in_filters(self, real_client: TestClient):
         """Test handling of special characters in filter values"""

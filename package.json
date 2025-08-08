@@ -12,10 +12,13 @@
     "test:snapshot-update": "jest -u"
   },
   "devDependencies": {
+    "axios": "^1.6.2",
     "jest": "^29.7.0",
-    "axios": "^1.6.2"
+    "jest-environment-jsdom": "^30.0.5",
+    "jquery": "^3.7.1",
+    "jsdom": "^26.1.0"
   },
-  "jest": {
-    "testEnvironment": "node"
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.71"
   }
 }
