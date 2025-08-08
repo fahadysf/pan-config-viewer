@@ -1,5 +1,7 @@
 # PAN Config Viewer API Documentation
 
+![PAN Config Viewer Logo](assets/logo.svg){ width="200" align="right" }
+
 <div align="center" markdown="1">
 
 [![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/fahadysf/pan-config-viewer)
