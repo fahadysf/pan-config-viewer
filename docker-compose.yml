@@ -1,8 +1,14 @@
 services:
-  pan-config-api:
+  pan-config-viewer:
+    # Multi-stage build includes React frontend and Python backend
     build:
       context: .
       dockerfile: Dockerfile
+      # Ensure we rebuild when dependencies change
+      cache_from:
+        - node:22-alpine
+        - python:3.11-slim
+    image: pan-config-viewer:latest
     container_name: pan-config-viewer
     ports:
       - "8000:8000"
@@ -19,3 +25,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - pan-viewer-network
+
+networks:
+  pan-viewer-network:
+    driver: bridge

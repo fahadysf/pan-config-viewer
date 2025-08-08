@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, Path, Request
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from typing import List, Optional, Dict, Any
 import os
 import glob
@@ -221,8 +220,7 @@ CONFIG_FILES_PATH = os.environ.get("CONFIG_FILES_PATH", "./config-files")
 parsers: Dict[str, PanoramaXMLParser] = {}
 available_configs: List[str] = []
 
-# Setup templates
-templates = Jinja2Templates(directory="templates")
+# Templates removed - using React frontend instead
 
 @app.on_event("startup")
 async def startup_event():
@@ -363,13 +361,14 @@ def parse_filter_params(params: Dict[str, Any]) -> Dict[str, Any]:
 
 @app.get("/", include_in_schema=False)
 async def root():
-    """Redirect to API documentation"""
-    return RedirectResponse(url="/docs")
+    """Serve the React frontend"""
+    # Check if we have a built React app
+    if os.path.exists("static/dist/index.html"):
+        return FileResponse("static/dist/index.html")
+    else:
+        # Fallback to API docs if no frontend is built
+        return RedirectResponse(url="/docs")
 
-@app.get("/viewer", response_class=HTMLResponse, include_in_schema=False)
-async def viewer(request: Request):
-    """Serve the configuration viewer frontend"""
-    return templates.TemplateResponse("viewer.html", {"request": request})
 
 # Configuration Management Endpoints
 @app.get("/api/v1/configs",
@@ -1444,6 +1443,19 @@ async def health_check():
         "configs_loaded": len(parsers),
         "available_configs": available_configs
     }
+
+# Mount static files for the React app (after all API routes are defined)
+if os.path.exists("static/dist"):
+    app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="react-assets")
+    
+    # Catch-all route for React app (must be defined AFTER all API routes)
+    @app.get("/{path:path}", include_in_schema=False)
+    async def serve_react_app(path: str):
+        """Serve React app for all non-API routes"""
+        # Return the index.html for client-side routing
+        if os.path.exists("static/dist/index.html"):
+            return FileResponse("static/dist/index.html")
+        raise HTTPException(status_code=404)
 
 if __name__ == "__main__":
     import uvicorn
