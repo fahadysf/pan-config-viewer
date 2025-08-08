@@ -41,17 +41,25 @@ describe('AddressesTable', () => {
     vi.mocked(configApi.getAddresses).mockResolvedValue({
       items: [
         {
+          xpath: '/config/shared/address/entry[1]',
+          'parent-device-group': null,
+          'parent-template': null,
+          'parent-vsys': null,
           name: 'test-address',
           type: 'ip-netmask',
-          value: '192.168.1.0/24',
-          location: 'shared',
+          'ip-netmask': '192.168.1.0/24',
+          'ip-range': null,
+          fqdn: null,
           description: 'Test network',
+          tag: [],
         },
       ],
-      total: 1,
+      total_items: 1,
       page: 1,
       page_size: 10,
       total_pages: 1,
+      has_next: false,
+      has_previous: false,
     })
   })
 
@@ -94,10 +102,12 @@ describe('AddressesTable', () => {
   it('renders empty state when no data', async () => {
     vi.mocked(configApi.getAddresses).mockResolvedValue({
       items: [],
-      total: 0,
+      total_items: 0,
       page: 1,
       page_size: 10,
       total_pages: 0,
+      has_next: false,
+      has_previous: false,
     })
     
     render(<AddressesTable />, { wrapper: createWrapper() })

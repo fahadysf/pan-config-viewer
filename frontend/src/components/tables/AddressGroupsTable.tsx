@@ -32,7 +32,7 @@ export function AddressGroupsTable() {
         pagination.pageSize,
         filters
       )
-      updateStat('address-groups', response.total)
+      updateStat('address-groups', response.total_items)
       return response
     },
     enabled: !!selectedConfig,
@@ -49,21 +49,61 @@ export function AddressGroupsTable() {
     {
       accessorKey: 'type',
       header: 'Type',
+      cell: ({ row }) => {
+        const group = row.original
+        const hasStaticMembers = group.static && group.static.length > 0
+        const hasDynamicFilter = group.dynamic != null
+        
+        let type = 'Empty'
+        let colorClass = 'bg-gray-100 text-gray-800'
+        
+        if (hasStaticMembers && hasDynamicFilter) {
+          type = 'Mixed'
+          colorClass = 'bg-purple-100 text-purple-800'
+        } else if (hasStaticMembers) {
+          type = 'Static'
+          colorClass = 'bg-green-100 text-green-800'
+        } else if (hasDynamicFilter) {
+          type = 'Dynamic'
+          colorClass = 'bg-blue-100 text-blue-800'
+        }
+        
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+            {type}
+          </span>
+        )
+      },
     },
     {
       accessorKey: 'members',
-      header: 'Members',
+      header: 'Members/Filter',
       cell: ({ row }) => {
-        const members = row.getValue('members') as string[]
+        const group = row.original
+        const staticMembers = group.static || []
+        const dynamicFilter = group.dynamic
+        
         return (
-          <div className="max-w-xs">
-            {members.length > 0 ? (
-              <span className="text-sm">
-                {members.slice(0, 3).join(', ')}
-                {members.length > 3 && ` +${members.length - 3} more`}
-              </span>
-            ) : (
-              <span className="text-gray-400 text-sm italic">No members</span>
+          <div className="max-w-xs space-y-1">
+            {staticMembers.length > 0 && (
+              <div>
+                <span className="text-xs font-medium text-gray-500">Static:</span>
+                <div className="text-sm">
+                  {staticMembers.slice(0, 2).join(', ')}
+                  {staticMembers.length > 2 && ` +${staticMembers.length - 2} more`}
+                </div>
+              </div>
+            )}
+            {dynamicFilter && (
+              <div>
+                <span className="text-xs font-medium text-gray-500">Dynamic:</span>
+                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded block mt-1 truncate">
+                  {typeof dynamicFilter === 'string' ? dynamicFilter : JSON.stringify(dynamicFilter)}
+                </code>
+              </div>
+            )}
+            {staticMembers.length === 0 && !dynamicFilter && (
+              <span className="text-gray-400 text-sm italic">No members or filter</span>
             )}
           </div>
         )
@@ -72,6 +112,14 @@ export function AddressGroupsTable() {
     {
       accessorKey: 'location',
       header: 'Location',
+      cell: ({ row }) => {
+        const group = row.original
+        const location = group['parent-device-group'] || 
+                        group['parent-template'] || 
+                        group['parent-vsys'] || 
+                        'Shared'
+        return <span className="text-sm">{location}</span>
+      },
     },
     {
       accessorKey: 'description',

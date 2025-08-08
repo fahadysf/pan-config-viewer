@@ -32,7 +32,7 @@ export function AddressesTable() {
         pagination.pageSize,
         filters
       )
-      updateStat('addresses', response.total)
+      updateStat('addresses', response.total_items)
       return response
     },
     enabled: !!selectedConfig,
@@ -58,15 +58,67 @@ export function AddressesTable() {
     {
       accessorKey: 'value',
       header: 'Value',
-      cell: ({ row }) => (
-        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-          {row.getValue('value')}
-        </code>
-      ),
+      cell: ({ row }) => {
+        const address = row.original
+        let value = 'N/A'
+        
+        // Helper function to check if value is valid (not null, undefined, or empty string)
+        const isValidValue = (val: string | null | undefined): boolean => {
+          return val != null && val.trim() !== ''
+        }
+        
+        // First, try to get value based on the type field
+        switch (address.type) {
+          case 'ip-netmask':
+            if (isValidValue(address['ip-netmask'])) {
+              value = address['ip-netmask']!
+            }
+            break
+          case 'ip-range':
+            if (isValidValue(address['ip-range'])) {
+              value = address['ip-range']!
+            }
+            break
+          case 'fqdn':
+            if (isValidValue(address.fqdn)) {
+              value = address.fqdn!
+            }
+            break
+        }
+        
+        // If no value found for the specified type, try fallback to any available value
+        if (value === 'N/A') {
+          if (isValidValue(address['ip-netmask'])) {
+            value = address['ip-netmask']!
+          } else if (isValidValue(address['ip-range'])) {
+            value = address['ip-range']!
+          } else if (isValidValue(address.fqdn)) {
+            value = address.fqdn!
+          }
+        }
+        
+        return (
+          <code className={`text-sm px-2 py-1 rounded ${
+            value === 'N/A' 
+              ? 'bg-red-100 text-red-700' 
+              : 'bg-gray-100 text-gray-800'
+          }`}>
+            {value}
+          </code>
+        )
+      },
     },
     {
       accessorKey: 'location',
       header: 'Location',
+      cell: ({ row }) => {
+        const address = row.original
+        const location = address['parent-device-group'] || 
+                        address['parent-template'] || 
+                        address['parent-vsys'] || 
+                        'Shared'
+        return <span className="text-sm">{location}</span>
+      },
     },
     {
       accessorKey: 'description',
