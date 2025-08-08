@@ -95,11 +95,12 @@ app = FastAPI(
     - `protocol=tcp` - Filter by protocol (for services)
     
     ### 2. Advanced Filter Syntax
-    Use `filter[property_operator]=value` for precise filtering.
+    Use `filter.property.operator=value` for precise filtering.
+    If no operator is specified, `contains` is used by default: `filter.property=value`
     
     #### Available Operators:
-    - `equals` - Exact match
-    - `not_equals` - Not equal to value
+    - `eq` or `equals` - Exact match
+    - `ne` or `not_equals` - Not equal to value
     - `contains` - Contains substring (default if no operator specified)
     - `not_contains` - Does not contain substring
     - `starts_with` - Starts with value
@@ -115,27 +116,30 @@ app = FastAPI(
     
     #### Filter Examples:
     ```
-    # Name contains "firewall"
-    filter[name_contains]=firewall
+    # Name contains "firewall" (default operator)
+    filter.name=firewall
+    
+    # Name equals exactly "firewall-01"
+    filter.name.equals=firewall-01
     
     # IP starts with "10."
-    filter[ip_starts_with]=10.
+    filter.ip.starts_with=10.
     
     # Port greater than 8000
-    filter[port_gt]=8000
+    filter.port.gt=8000
     
     # Has "production" tag
-    filter[tag_in]=production
+    filter.tag.in=production
     
     # Name matches regex pattern
-    filter[name_regex]=^fw-.*-\\d+$
+    filter.name.regex=^fw-.*-\\d+$
     
     # Multiple filters (AND logic)
-    filter[protocol_equals]=tcp&filter[port_gte]=8000&filter[port_lte]=9000
+    filter.protocol.eq=tcp&filter.port.gte=8000&filter.port.lte=9000
     
     # Device-group specific endpoints (same filtering syntax!)
-    GET /api/v1/configs/pan/device-groups/DMZ/addresses?filter[name_contains]=server
-    GET /api/v1/configs/pan/device-groups/HQ/services?filter[protocol_equals]=tcp
+    GET /api/v1/configs/pan/device-groups/DMZ/addresses?filter.name.contains=server
+    GET /api/v1/configs/pan/device-groups/HQ/services?filter.protocol.eq=tcp
     ```
     
     ### Object-Specific Filters
@@ -294,37 +298,65 @@ def paginate_results(items: List, pagination: PaginationParams) -> Dict:
     }
 
 def parse_filter_params(params: Dict[str, Any]) -> Dict[str, Any]:
-    """Parse filter parameters from request with validation"""
+    """Parse filter parameters from request with validation
+    
+    Supports dot notation for filters:
+    - filter.name=value (defaults to contains operator)
+    - filter.name.equals=value (explicit operator)
+    - filter.name.starts_with=value
+    """
     filters = {}
+    
+    # Create a mapping of operator aliases to their enum values
+    operator_aliases = {
+        'eq': 'eq',
+        'equals': 'eq',
+        'ne': 'ne',
+        'not_equals': 'ne',
+        'contains': 'contains',
+        'not_contains': 'not_contains',
+        'starts_with': 'starts_with',
+        'ends_with': 'ends_with',
+        'in': 'in',
+        'not_in': 'not_in',
+        'gt': 'gt',
+        'greater_than': 'gt',
+        'lt': 'lt',
+        'less_than': 'lt',
+        'gte': 'gte',
+        'greater_than_or_equal': 'gte',
+        'lte': 'lte',
+        'less_than_or_equal': 'lte',
+        'regex': 'regex',
+        'exists': 'exists'
+    }
+    
     for key, value in params.items():
-        if key.startswith('filter[') and key.endswith(']') and value is not None:
+        if key.startswith('filter.') and value is not None:
             try:
-                # Extract field name from filter[field] or filter[field][op]
-                filter_key = key[7:-1]  # Remove 'filter[' and ']'
+                # Extract field name and operator from filter.field or filter.field.operator
+                filter_key = key[7:]  # Remove 'filter.' prefix
                 
                 # Validate filter key format
                 if not filter_key:
                     raise HTTPException(status_code=400, detail=f"Invalid filter format: {key}")
                 
-                if '][' in filter_key:
-                    # Handle filter[field][op] format
-                    parts = filter_key.split('][', 1)
-                    if len(parts) != 2 or not parts[0] or not parts[1]:
+                # Check if there's an operator specified
+                parts = filter_key.rsplit('.', 1)  # Split from the right to handle field names with dots
+                
+                # Check if the last part is an operator alias
+                if len(parts) == 2 and parts[1] in operator_aliases:
+                    # filter.field.operator format
+                    field, op_alias = parts
+                    if not field:
                         raise HTTPException(status_code=400, detail=f"Invalid filter format: {key}")
-                    field, op = parts
-                    
-                    # Validate operator
-                    valid_operators = [e.value for e in FilterOperator]
-                    if op not in valid_operators:
-                        raise HTTPException(
-                            status_code=400, 
-                            detail=f"Invalid filter operator: {op}. Valid operators are: {', '.join(valid_operators)}"
-                        )
-                    
+                    # Map the alias to the actual operator value
+                    op = operator_aliases[op_alias]
                     filters[f"{field}_{op}"] = value
                 else:
-                    # Handle filter[field] format
+                    # filter.field format (default to contains operator)
                     filters[filter_key] = value
+                    
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=f"Error parsing filter {key}: {str(e)}")
     return filters
