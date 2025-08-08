@@ -1,15 +1,26 @@
-# PAN Config Viewer API
+# PAN Config Viewer
 
 ![PAN Config Viewer Logo](docs/assets/logo.svg)
 
 [![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/fahadysf/pan-config-viewer)
+[![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20shadcn/ui-61DAFB)](https://github.com/fahadysf/pan-config-viewer)
 [![Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)](https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A powerful REST API for querying and analyzing PAN-OS Panorama configurations with advanced filtering capabilities. This application parses Panorama configuration XML files and provides a comprehensive API to access various configuration objects.
+A comprehensive solution for viewing and analyzing PAN-OS Panorama configurations, featuring a modern React-based web interface and a powerful REST API with advanced filtering capabilities. This application parses Panorama configuration XML files and provides both a user-friendly UI and programmatic API access to various configuration objects.
 
 ## Features
 
+### Modern React Frontend
+- **Built with React 18 & TypeScript** - Type-safe, modern development experience
+- **shadcn/ui Components** - Beautiful, accessible UI components built on Radix UI
+- **Advanced Data Tables** - Server-side pagination, sorting, and filtering
+- **Real-time API Stats** - Monitor API performance with collapsible stats widget
+- **Responsive Design** - Works seamlessly on desktop and mobile devices
+- **State Management** - Efficient state handling with Zustand
+- **Data Fetching** - Optimized server state with TanStack Query (React Query)
+
+### Powerful Backend API
 - **Advanced Filtering System** - 15+ operators for precise queries (equals, contains, starts_with, ends_with, gt, lt, regex, etc.)
 - **Real-time XML parsing** - Reads configuration directly from XML file
 - **Comprehensive API endpoints** for:
@@ -51,10 +62,11 @@ cp your-panorama-backup.xml config-files/
 docker-compose up -d
 ```
 
-4. Access the API:
-   - List available configs: http://localhost:8000/api/v1/configs
-   - Swagger UI: http://localhost:8000/docs
+4. Access the application:
+   - Web Interface: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
    - ReDoc: http://localhost:8000/redoc
+   - Direct API: http://localhost:8000/api/v1/configs
 
 5. Stop the container:
 ```bash
@@ -106,19 +118,24 @@ You can access them via:
 
 ## Local Installation (Without Docker)
 
-1. Install Python 3.8 or higher
+### Prerequisites
+- Python 3.8 or higher
+- Node.js 18 or higher (for frontend development)
 
-2. Install dependencies:
+### Backend Setup
+
+1. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Update the `XML_FILE_PATH` variable in `main.py` to point to your Panorama XML backup file:
-```python
-XML_FILE_PATH = "/path/to/your/panorama-backup.xml"
+2. Place your Panorama XML files in the `config-files` directory:
+```bash
+mkdir config-files
+cp your-panorama-backup.xml config-files/
 ```
 
-4. Run the application:
+3. Run the application:
 ```bash
 python main.py
 ```
@@ -127,6 +144,30 @@ Or with uvicorn directly:
 ```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### Frontend Development
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Run development server:
+```bash
+npm run dev
+```
+
+4. Build for production:
+```bash
+npm run build
+```
+
+The built files will be automatically served by the backend when accessing http://localhost:8000
 
 ## Documentation
 
