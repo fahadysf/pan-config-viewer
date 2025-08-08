@@ -137,6 +137,7 @@ export interface FilterOperator {
   value: string
   label: string
   applicableTypes: ('text' | 'number')[]
+  requiresValue?: boolean
 }
 
 export interface ColumnFilter {

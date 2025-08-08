@@ -14,12 +14,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FilterableColumnHeader } from '@/components/ui/filterable-column-header'
 import { DetailModal } from '@/components/modals/DetailModal'
 
 export function DeviceGroupsTable() {
   const { selectedConfig, updateStat } = useConfigStore()
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
-  const [filters] = useState<ColumnFilter[]>([])
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
+  const [filters, setFilters] = useState<ColumnFilter[]>([])
   const [detailItem, setDetailItem] = useState<DeviceGroup | null>(null)
 
   const { data, isLoading } = useQuery({
@@ -41,14 +42,30 @@ export function DeviceGroupsTable() {
   const columns: ColumnDef<DeviceGroup>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Name"
+          field="name"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue('name')}</div>
       ),
     },
     {
       accessorKey: 'parent-dg',
-      header: 'Parent DG',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Parent DG"
+          field="parent-dg"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const parentDg = group['parent-dg']
@@ -61,7 +78,20 @@ export function DeviceGroupsTable() {
     },
     {
       accessorKey: 'devices_count',
-      header: 'Devices',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Devices"
+          field="devices_count"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'gte', label: 'Count >= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'lte', label: 'Count <= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'eq', label: 'Count = ', requiresValue: true, applicableTypes: ['number'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => (
         <div className="text-center">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -72,7 +102,20 @@ export function DeviceGroupsTable() {
     },
     {
       accessorKey: 'objects',
-      header: 'Objects',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Objects"
+          field="address_count,service_count"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'gte', label: 'Count >= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'lte', label: 'Count <= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'eq', label: 'Count = ', requiresValue: true, applicableTypes: ['number'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const addressCount = group.address_count + group['address-group-count']
@@ -133,7 +176,15 @@ export function DeviceGroupsTable() {
     },
     {
       accessorKey: 'location',
-      header: 'Location',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Location"
+          field="parent-device-group,parent-template,parent-vsys"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const location = group['parent-device-group'] || 
@@ -145,7 +196,15 @@ export function DeviceGroupsTable() {
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Description"
+          field="description"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const description = row.getValue('description') as string
         return description ? (

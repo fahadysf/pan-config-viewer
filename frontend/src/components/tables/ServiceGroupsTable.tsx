@@ -14,12 +14,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FilterableColumnHeader } from '@/components/ui/filterable-column-header'
 import { DetailModal } from '@/components/modals/DetailModal'
 
 export function ServiceGroupsTable() {
   const { selectedConfig, updateStat } = useConfigStore()
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
-  const [filters] = useState<ColumnFilter[]>([])
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
+  const [filters, setFilters] = useState<ColumnFilter[]>([])
   const [detailItem, setDetailItem] = useState<ServiceGroup | null>(null)
 
   const { data, isLoading } = useQuery({
@@ -41,14 +42,35 @@ export function ServiceGroupsTable() {
   const columns: ColumnDef<ServiceGroup>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Name"
+          field="name"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue('name')}</div>
       ),
     },
     {
       accessorKey: 'member_count',
-      header: 'Count',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Count"
+          field="members"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'gte', label: 'Count >= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'lte', label: 'Count <= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'eq', label: 'Count = ', requiresValue: true, applicableTypes: ['number'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const count = group.members?.length || 0
@@ -65,7 +87,19 @@ export function ServiceGroupsTable() {
     },
     {
       accessorKey: 'members',
-      header: 'Members',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Members"
+          field="members"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
+            { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const members = group.members || []
@@ -94,7 +128,15 @@ export function ServiceGroupsTable() {
     },
     {
       accessorKey: 'location',
-      header: 'Location',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Location"
+          field="parent-device-group,parent-template,parent-vsys"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const location = group['parent-device-group'] || 
@@ -106,7 +148,15 @@ export function ServiceGroupsTable() {
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Description"
+          field="description"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const description = row.getValue('description') as string
         return description ? (
