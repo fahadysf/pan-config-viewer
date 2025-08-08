@@ -24,7 +24,7 @@ docker run -p 8000:8000 -v /path/to/configs:/configs pan-config-viewer
 
 ### From Source
 ```bash
-git clone https://github.com/yourusername/pan-config-viewer.git
+git clone https://github.com/fahadysf/pan-config-viewer.git
 cd pan-config-viewer
 pip install -r requirements.txt
 ```
@@ -383,13 +383,12 @@ export CACHE_TTL=3600
 ## Next Steps
 
 1. **[Explore Filtering](../guides/filtering/index.md)** - Master the powerful filtering system
-2. **[API Reference](../api/index.md)** - Detailed endpoint documentation
-3. **[Examples](../examples/index.md)** - Real-world usage examples
-4. **[Advanced Usage](../guides/advanced.md)** - Performance optimization and best practices
+2. **[Operator Reference](../guides/filtering/operators.md)** - All operators with examples
+3. **[Complex Examples](../examples/complex-filters.md)** - Real-world usage examples
+4. **[API Endpoints](../api/endpoints/addresses.md)** - Detailed endpoint documentation
 
 ## Getting Help
 
 - 📖 [Full Documentation](../index.md)
-- 🐛 [Report Issues](https://github.com/yourusername/pan-config-viewer/issues)
-- 💬 [Community Forum](https://forum.example.com)
-- 📧 [Email Support](mailto:support@example.com)
+- 🐛 [Report Issues](https://github.com/fahadysf/pan-config-viewer/issues)
+- 📧 [Contact](https://github.com/fahadysf/pan-config-viewer/issues/new)

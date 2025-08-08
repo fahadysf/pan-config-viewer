@@ -2,17 +2,15 @@
 
 <div align="center">
 
-![PAN Config Viewer Logo](assets/banner.png)
-
-[![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/yourusername/pan-config-viewer)
+[![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/fahadysf/pan-config-viewer)
 [![Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)](https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **A powerful REST API for querying and analyzing PAN-OS Panorama configurations**
 
-[Get Started](getting-started.md){ .md-button .md-button--primary }
-[API Reference](api/index.md){ .md-button }
-[View on GitHub](https://github.com/yourusername/pan-config-viewer){ .md-button }
+[Get Started](quickstart/index.md){ .md-button .md-button--primary }
+[Filtering Guide](guides/filtering/index.md){ .md-button }
+[View on GitHub](https://github.com/fahadysf/pan-config-viewer){ .md-button }
 
 </div>
 
@@ -126,34 +124,33 @@ filter.disabled.equals=false"
 
 ## 🚦 Getting Started
 
-1. **[Installation](installation.md)** - Set up the API server
-2. **[Configuration](configuration.md)** - Configure your environment
-3. **[Quick Start](quickstart/index.md)** - Make your first API call
-4. **[Filtering Guide](guides/filtering/index.md)** - Master the filtering system
-5. **[API Reference](api/index.md)** - Explore all endpoints
+1. **[Quick Start](quickstart/index.md)** - Get up and running quickly
+2. **[Filtering Guide](guides/filtering/index.md)** - Master the filtering system
+3. **[All Operators](guides/filtering/operators.md)** - Detailed operator reference
+4. **[API Examples](examples/complex-filters.md)** - Real-world usage examples
 
 ## 📚 Documentation Structure
 
 - **[Quick Start](quickstart/index.md)** - Get up and running quickly
-- **[API Guide](api/index.md)** - Core concepts and usage patterns
-- **[Filtering](guides/filtering/index.md)** - Deep dive into filtering capabilities
-- **[Endpoints](api/endpoints/index.md)** - Detailed endpoint documentation
-- **[Examples](examples/index.md)** - Real-world usage examples
-- **[Reference](reference/index.md)** - API specifications and troubleshooting
+- **[Filtering Guide](guides/filtering/index.md)** - Deep dive into filtering capabilities
+- **[Operator Reference](guides/filtering/operators.md)** - All operators with examples
+- **[Address Objects API](api/endpoints/addresses.md)** - Address endpoint documentation
+- **[Service Objects API](api/endpoints/services.md)** - Service endpoint documentation
+- **[Security Rules API](api/endpoints/security-rules.md)** - Security rules documentation
+- **[Complex Examples](examples/complex-filters.md)** - Real-world usage examples
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](developer/contributing.md) for details.
+We welcome contributions! Please see our [GitHub repository](https://github.com/fahadysf/pan-config-viewer) for details.
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/yourusername/pan-config-viewer/blob/main/LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/fahadysf/pan-config-viewer/blob/main/LICENSE) file for details.
 
 ## 🆘 Support
 
-- 📧 Email: support@example.com
-- 💬 Slack: [Join our workspace](https://slack.example.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/pan-config-viewer/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/fahadysf/pan-config-viewer/issues)
+- 📧 Contact: [Create an issue](https://github.com/fahadysf/pan-config-viewer/issues/new)
 - 📖 Docs: [Read the Docs](https://pan-config-viewer.readthedocs.io)
 
 ---
