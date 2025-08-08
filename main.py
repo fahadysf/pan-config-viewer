@@ -84,7 +84,8 @@ app = FastAPI(
     
     ## Filtering
     
-    Most endpoints support comprehensive filtering using two syntaxes:
+    All list endpoints support comprehensive filtering using two syntaxes.
+    This includes both shared object endpoints and device-group/template specific endpoints:
     
     ### 1. Basic Query Parameters
     Simple filters using standard query parameters:
@@ -131,6 +132,10 @@ app = FastAPI(
     
     # Multiple filters (AND logic)
     filter[protocol_equals]=tcp&filter[port_gte]=8000&filter[port_lte]=9000
+    
+    # Device-group specific endpoints (same filtering syntax!)
+    GET /api/v1/configs/pan/device-groups/DMZ/addresses?filter[name_contains]=server
+    GET /api/v1/configs/pan/device-groups/HQ/services?filter[protocol_equals]=tcp
     ```
     
     ### Object-Specific Filters
