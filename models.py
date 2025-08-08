@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from enum import Enum
 
 
@@ -42,6 +42,12 @@ class ZoneProtectionProfileType(str, Enum):
     RECONNAISSANCE = "reconnaissance"
 
 
+class AddressType(str, Enum):
+    FQDN = "fqdn"
+    IP_NETMASK = "ip-netmask"
+    IP_RANGE = "ip-range"
+
+
 class Protocol(BaseModel):
     tcp: Optional[Dict[str, Any]] = Field(None, description="TCP protocol configuration")
     udp: Optional[Dict[str, Any]] = Field(None, description="UDP protocol configuration")
@@ -63,11 +69,42 @@ class ServiceGroup(ConfigLocation):
 
 class AddressObject(ConfigLocation):
     name: str = Field(..., description="Address object name")
+    type: Optional[AddressType] = Field(None, description="Address type")
     ip_netmask: Optional[str] = Field(None, alias="ip-netmask", description="IP address with netmask")
     ip_range: Optional[str] = Field(None, alias="ip-range", description="IP address range")
     fqdn: Optional[str] = Field(None, description="Fully qualified domain name")
     description: Optional[str] = Field(None, description="Address description")
     tag: Optional[List[str]] = Field(None, description="Tags associated with the address")
+    
+    @model_validator(mode='after')
+    def validate_address_type(self):
+        """Ensure only the value matching the type is populated and others are null"""
+        # Determine the type based on which field is populated
+        if self.ip_netmask is not None:
+            self.type = AddressType.IP_NETMASK
+            self.ip_range = None
+            self.fqdn = None
+        elif self.ip_range is not None:
+            self.type = AddressType.IP_RANGE
+            self.ip_netmask = None
+            self.fqdn = None
+        elif self.fqdn is not None:
+            self.type = AddressType.FQDN
+            self.ip_netmask = None
+            self.ip_range = None
+        else:
+            # If type is specified but no corresponding value, ensure consistency
+            if self.type == AddressType.IP_NETMASK:
+                self.ip_range = None
+                self.fqdn = None
+            elif self.type == AddressType.IP_RANGE:
+                self.ip_netmask = None
+                self.fqdn = None
+            elif self.type == AddressType.FQDN:
+                self.ip_netmask = None
+                self.ip_range = None
+        
+        return self
 
 
 class AddressGroup(ConfigLocation):
