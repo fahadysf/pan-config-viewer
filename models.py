@@ -233,6 +233,11 @@ class SecurityRule(ConfigLocation):
     disabled: Optional[bool] = Field(False, description="Rule disabled")
     description: Optional[str] = Field(None, description="Rule description")
     tag: Optional[List[str]] = Field(None, description="Tags")
+    # Runtime metadata fields (populated dynamically)
+    device_group: Optional[str] = Field(None, description="Device group name (runtime)")
+    rule_type: Optional[str] = Field(None, description="Rule type (runtime)")
+    order: Optional[int] = Field(None, description="Rule order (runtime)")
+    rulebase_location: Optional[str] = Field(None, description="Rule location (runtime)")
 
 
 class NATRule(ConfigLocation):
@@ -248,6 +253,11 @@ class NATRule(ConfigLocation):
     disabled: Optional[bool] = Field(False, description="Rule disabled")
     description: Optional[str] = Field(None, description="Rule description")
     tag: Optional[List[str]] = Field(None, description="Tags")
+    # Runtime metadata fields (populated dynamically)
+    device_group: Optional[str] = Field(None, description="Device group name (runtime)")
+    rule_type: Optional[str] = Field(None, description="Rule type (runtime)")
+    order: Optional[int] = Field(None, description="Rule order (runtime)")
+    rulebase_location: Optional[str] = Field(None, description="Rule location (runtime)")
 
 
 class DeviceGroup(ConfigLocation):

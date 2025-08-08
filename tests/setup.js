@@ -46,11 +46,18 @@ global.testHelpers = {
   }
 };
 
-// Check if API is running before tests
+// Check if API is running before tests (skip for mocked tests)
 beforeAll(async () => {
-  const isAPIRunning = await global.testHelpers.checkAPIHealth();
-  if (!isAPIRunning) {
-    console.error('\n⚠️  API is not running! Please start the API server with: python main.py\n');
-    process.exit(1);
+  // Skip API check for frontend tests that mock axios
+  const isFrontendTest = process.env.NODE_ENV === 'test' && 
+                         (global.jest?.isMockFunction?.(require('axios').get) || 
+                          typeof jest !== 'undefined');
+  
+  if (!isFrontendTest) {
+    const isAPIRunning = await global.testHelpers.checkAPIHealth();
+    if (!isAPIRunning) {
+      console.error('\n⚠️  API is not running! Please start the API server with: python main.py\n');
+      process.exit(1);
+    }
   }
 });

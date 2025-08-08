@@ -181,14 +181,17 @@ describe('Integrated Pagination and Filtering Tests', () => {
                 'filter[description][eq]': 'Test'
             };
             
-            axios.get.mockImplementationOnce((url, config) => {
-                expect(config.params).toEqual(expect.objectContaining(filters));
-                return Promise.resolve({ data: mockApiResponse });
-            });
+            // Just verify the call was made with the filters
+            axios.get.mockResolvedValueOnce({ data: mockApiResponse });
             
             await axios.get('/api/v1/configs/test/addresses', { params: filters });
             
-            expect(axios.get).toHaveBeenCalled();
+            expect(axios.get).toHaveBeenCalledWith(
+                '/api/v1/configs/test/addresses',
+                expect.objectContaining({
+                    params: filters
+                })
+            );
         });
         
         test('should debounce filter input changes', (done) => {
@@ -246,6 +249,9 @@ describe('Integrated Pagination and Filtering Tests', () => {
             showLoader();
             expect(document.getElementById('loading-indicator').style.display).toBe('block');
             
+            // Mock API response
+            axios.get.mockResolvedValueOnce({ data: mockApiResponse });
+            
             // Simulate API call
             await axios.get('/api/v1/configs/test/addresses');
             
@@ -264,7 +270,13 @@ describe('Integrated Pagination and Filtering Tests', () => {
                 has_previous: false
             };
             
-            axios.get.mockResolvedValueOnce({ data: emptyResponse });
+            // Mock to return empty response for filtered query
+            axios.get.mockImplementationOnce((url, config) => {
+                if (config?.params?.['filter[name]'] === 'nonexistent') {
+                    return Promise.resolve({ data: emptyResponse });
+                }
+                return Promise.resolve({ data: mockApiResponse });
+            });
             
             const response = await axios.get('/api/v1/configs/test/addresses', {
                 params: { 'filter[name]': 'nonexistent' }
@@ -329,6 +341,9 @@ describe('Integrated Pagination and Filtering Tests', () => {
             const cacheKey = 'addresses_filter_10.0';
             const cache = new Map();
             
+            // Mock response for the request
+            axios.get.mockResolvedValueOnce({ data: mockApiResponse });
+            
             // First request - cache miss
             const response1 = await axios.get('/api/v1/configs/test/addresses', {
                 params: { 'filter[name]': '10.0' }
@@ -344,6 +359,11 @@ describe('Integrated Pagination and Filtering Tests', () => {
         
         test('should handle rapid pagination requests', async () => {
             const requests = [];
+            
+            // Mock all 5 responses
+            for (let i = 0; i < 5; i++) {
+                axios.get.mockResolvedValueOnce({ data: mockApiResponse });
+            }
             
             // Simulate rapid page changes
             for (let page = 1; page <= 5; page++) {
