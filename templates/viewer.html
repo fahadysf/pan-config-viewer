@@ -798,6 +798,21 @@
             border-color: #9ca3af;
         }
         
+        .enhanced-filter-dropdown .filter-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: #6b7280;
+            font-size: 14px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 16px;
+        }
+        
+        .enhanced-filter-dropdown .filter-loading i {
+            margin-right: 8px;
+        }
+        
         /* Ensure table headers have relative positioning for dropdown positioning */
         table.dataTable thead th {
             position: relative;
@@ -1100,38 +1115,23 @@
                         <p class="text-gray-600 mt-1">Device group hierarchy and configurations</p>
                     </div>
                     
-                    <!-- Device Groups Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <template x-for="dg in currentData" :key="dg.name">
-                            <div class="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer" @click="showDeviceGroupDetail(dg)">
-                                <h3 class="font-semibold text-lg text-gray-900" x-text="dg.name"></h3>
-                                <p class="text-sm text-gray-600 mt-1" x-text="dg.description || 'No description'"></p>
-                                
-                                <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-500">Addresses:</span>
-                                        <span class="font-medium" x-text="dg.address_count || 0"></span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-500">Services:</span>
-                                        <span class="font-medium" x-text="dg.service_count || 0"></span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-500">Pre Rules:</span>
-                                        <span class="font-medium" x-text="dg.pre_security_rules_count || 0"></span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-500">Post Rules:</span>
-                                        <span class="font-medium" x-text="dg.post_security_rules_count || 0"></span>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-3 pt-3 border-t border-gray-200">
-                                    <span class="text-xs text-gray-500">Parent: </span>
-                                    <span class="text-xs font-medium text-gray-700" x-text="dg.parent_dg || 'None'"></span>
-                                </div>
-                            </div>
-                        </template>
+                    <!-- Device Groups DataTable -->
+                    <div class="bg-white shadow-sm rounded-lg p-4">
+                        <table id="deviceGroupsTable" class="display w-full">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Parent</th>
+                                    <th>Addresses</th>
+                                    <th>Services</th>
+                                    <th>Pre Rules</th>
+                                    <th>Post Rules</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
                 </div>
                 
@@ -1167,6 +1167,68 @@
                             <tbody></tbody>
                         </table>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Templates Section -->
+                <div x-show="activeSection === 'templates'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Templates</h2>
+                        <p class="text-gray-600 mt-1">Device templates configuration</p>
+                    </div>
+                    
+                    <!-- Templates DataTable -->
+                    <div class="bg-white shadow-sm rounded-lg p-4">
+                        <table id="templatesTable" class="display w-full">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Device Count</th>
+                                    <th>Config Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Security Profiles Section -->
+                <div x-show="activeSection.startsWith('security-')" x-cloak>
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900" x-text="activeSection === 'security-vulnerability' ? 'Vulnerability Profiles' : activeSection === 'security-url' ? 'URL Filtering Profiles' : 'Security Profiles'"></h2>
+                        <p class="text-gray-600 mt-1">Security profile configurations</p>
+                    </div>
+                    
+                    <!-- Security Profiles Table -->
+                    <div class="bg-white shadow-sm rounded-lg p-4">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 bg-gray-50"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="profile in filteredData" :key="profile.name">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="profile.name"></td>
+                                        <td class="px-6 py-4 text-sm text-gray-500" x-text="profile.description || '-'"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full" x-text="activeSection.replace('security-', '').replace('-', ' ')"></span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button @click="showDetail(profile)" class="text-blue-600 hover:text-blue-900">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1268,15 +1330,20 @@
                 async loadStats() {
                     // Load counts for sidebar badges
                     try {
-                        // Addresses
-                        const addrResp = await fetch(`/api/v1/configs/${this.selectedConfig}/addresses`);
+                        // Addresses - fetch with page_size=1 to just get total count
+                        const addrResp = await fetch(`/api/v1/configs/${this.selectedConfig}/addresses?page_size=1`);
                         const addresses = await addrResp.json();
-                        this.stats.addresses = addresses.length;
+                        this.stats.addresses = addresses.total_items;
                         
                         // Device Groups
-                        const dgResp = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`);
+                        const dgResp = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups?page_size=1`);
                         const deviceGroups = await dgResp.json();
-                        this.stats.deviceGroups = deviceGroups.length;
+                        this.stats.deviceGroups = deviceGroups.total_items;
+                        
+                        // Templates
+                        const tmplResp = await fetch(`/api/v1/configs/${this.selectedConfig}/templates?page_size=1`);
+                        const templates = await tmplResp.json();
+                        this.stats.templates = templates.total_items;
                         
                         // Add more stats loading as needed
                     } catch (error) {
@@ -1287,44 +1354,10 @@
                 async loadAddresses() {
                     this.loading = true;
                     try {
-                        // Fetch from all sources in parallel
-                        const [sharedResp, deviceGroupsResp] = await Promise.all([
-                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/addresses`),
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
-                        ]);
-                        
-                        const sharedAddresses = await sharedResp.json();
-                        const deviceGroups = await deviceGroupsResp.json();
-                        
-                        // Start with shared addresses
-                        let allAddresses = [...sharedAddresses];
-                        
-                        // Fetch addresses from each device group
-                        const dgAddressPromises = deviceGroups.map(dg => 
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/addresses`)
-                                .then(resp => resp.json())
-                                .catch(() => [])
-                        );
-                        
-                        const dgAddressResults = await Promise.all(dgAddressPromises);
-                        
-                        // Combine all addresses
-                        dgAddressResults.forEach(addresses => {
-                            allAddresses = allAddresses.concat(addresses);
-                        });
-                        
-                        // Remove duplicates based on name
-                        const uniqueAddresses = Array.from(
-                            new Map(allAddresses.map(addr => [addr.name, addr])).values()
-                        );
-                        
-                        this.currentData = uniqueAddresses;
-                        this.stats.addresses = this.currentData.length;
-                        
-                        // Initialize or update DataTable
+                        // Initialize DataTable with server-side processing
                         this.initAddressesDataTable();
                     } catch (error) {
-                        console.error('Failed to load addresses:', error);
+                        console.error('Failed to initialize addresses table:', error);
                     } finally {
                         this.loading = false;
                     }
@@ -1336,45 +1369,101 @@
                         $('#addressesTable').DataTable().destroy();
                     }
                     
-                    // Transform data for DataTable
-                    const tableData = this.currentData.map(item => {
-                        const type = this.getAddressType(item);
-                        const typeHtml = type === 'ip-netmask' ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">IP/Netmask</span>' :
-                                        type === 'fqdn' ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">FQDN</span>' :
-                                        type === 'ip-range' ? '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">IP Range</span>' : '';
-                        
-                        const value = item['ip-netmask'] || item.fqdn || item['ip-range'] || '-';
-                        
-                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
-                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
-                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
-                        
-                        return [
-                            item.name,
-                            typeHtml,
-                            value,
-                            location,
-                            item.description || '-',
-                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                                <i class="fas fa-eye"></i> View
-                            </button>`
-                        ];
-                    });
-                    
                     // Make Alpine.js component available globally for onclick handlers
                     const alpineComponent = this;
                     window.configViewer = alpineComponent;
                     
-                    // Initialize DataTable with features
-                    $('#addressesTable').DataTable({
-                        data: tableData,
+                    // Initialize DataTable with server-side processing
+                    const table = $('#addressesTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/addresses`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._datatablesDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1,
+                                    location: 'all'  // Get addresses from all locations
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                // Add column filters if present
+                                const tableFilters = alpineComponent.columnFilters['addressesTable'];
+                                if (tableFilters && Object.keys(tableFilters).length > 0) {
+                                    for (const [field, filter] of Object.entries(tableFilters)) {
+                                        if (filter.operator === 'equals' || filter.operator === 'contains') {
+                                            params[`filter[${field}]`] = filter.value;
+                                        } else {
+                                            params[`filter[${field}][${filter.operator}]`] = filter.value;
+                                        }
+                                    }
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._datatablesDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(item => {
+                                        const type = alpineComponent.getAddressType(item);
+                                        const typeHtml = type === 'ip-netmask' ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">IP/Netmask</span>' :
+                                                        type === 'fqdn' ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">FQDN</span>' :
+                                                        type === 'ip-range' ? '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">IP Range</span>' : '';
+                                        
+                                        const value = item['ip-netmask'] || item.fqdn || item['ip-range'] || '-';
+                                        
+                                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                                        
+                                        return [
+                                            item.name,
+                                            typeHtml,
+                                            value,
+                                            location,
+                                            item.description || '-',
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.addresses = json.total_items;
+                                }
+                            }
+                        },
+                        columns: [
+                            { title: 'Name' },
+                            { title: 'Type' },
+                            { title: 'Value' },
+                            { title: 'Location' },
+                            { title: 'Description' },
+                            { title: 'Actions', orderable: false }
+                        ],
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
-
                         colReorder: true,
                         autoWidth: false,
-
                         buttons: [
                             {
                                 extend: 'colvis',
@@ -1385,27 +1474,42 @@
                             {
                                 extend: 'copy',
                                 text: '<i class="fas fa-copy"></i> Copy',
-                                className: 'dt-button-copy'
+                                className: 'dt-button-copy',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'csv',
                                 text: '<i class="fas fa-file-csv"></i> CSV',
-                                className: 'dt-button-csv'
+                                className: 'dt-button-csv',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="fas fa-file-excel"></i> Excel',
-                                className: 'dt-button-excel'
+                                className: 'dt-button-excel',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="fas fa-file-pdf"></i> PDF',
-                                className: 'dt-button-pdf'
+                                className: 'dt-button-pdf',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'print',
                                 text: '<i class="fas fa-print"></i> Print',
-                                className: 'dt-button-print'
+                                className: 'dt-button-print',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             }
                         ],
                         language: {
@@ -1413,6 +1517,7 @@
                             searchPlaceholder: "Search addresses...",
                             lengthMenu: "Show _MENU_ entries",
                             info: "Showing _START_ to _END_ of _TOTAL_ addresses",
+                            processing: '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin mr-2"></i>Loading addresses...</div>',
                             paginate: {
                                 first: "First",
                                 last: "Last",
@@ -1431,6 +1536,9 @@
                             }
                         }
                     });
+                    
+                    // Store table reference for later use
+                    this.addressesTable = table;
                 },
                 
                 initAddressGroupsDataTable() {
@@ -1439,49 +1547,104 @@
                         $('#addressGroupsTable').DataTable().destroy();
                     }
                     
-                    // Transform data for DataTable
-                    const tableData = this.currentData.map(item => {
-                        const members = item.members || [];
-                        const membersHtml = members.length > 0 
-                            ? `<div class="max-w-md inline-flex flex-wrap gap-1">
-                                ${members.slice(0, 4).map(m => `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">${m}</span>`).join('')}
-                                ${members.length > 4 ? `<span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">+${members.length - 4} more</span>` : ''}
-                               </div>`
-                            : '<span class="text-gray-400">No members</span>';
-                        
-                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
-                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
-                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
-                        
-                        const typeHtml = item.static ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Static</span>' :
-                                       item.dynamic ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Dynamic</span>' : '';
-                        
-                        return [
-                            item.name,
-                            typeHtml,
-                            membersHtml,
-                            location,
-                            item.description || '-',
-                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                                <i class="fas fa-eye"></i> View
-                            </button>`
-                        ];
-                    });
-                    
                     // Make Alpine.js component available globally for onclick handlers
                     const alpineComponent = this;
                     window.configViewer = alpineComponent;
                     
-                    // Initialize DataTable
-                    $('#addressGroupsTable').DataTable({
-                        data: tableData,
+                    // Initialize DataTable with server-side processing
+                    const table = $('#addressGroupsTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/address-groups`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._addressGroupsTableDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                // Add column filters if present
+                                const tableFilters = alpineComponent.columnFilters['addressGroupsTable'];
+                                if (tableFilters && Object.keys(tableFilters).length > 0) {
+                                    for (const [field, filter] of Object.entries(tableFilters)) {
+                                        if (filter.operator === 'equals' || filter.operator === 'contains') {
+                                            params[`filter[${field}]`] = filter.value;
+                                        } else {
+                                            params[`filter[${field}][${filter.operator}]`] = filter.value;
+                                        }
+                                    }
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._addressGroupsTableDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(item => {
+                                        const members = item.members || [];
+                                        const membersHtml = members.length > 0 
+                                            ? `<div class="max-w-md inline-flex flex-wrap gap-1">
+                                                ${members.slice(0, 4).map(m => `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">${m}</span>`).join('')}
+                                                ${members.length > 4 ? `<span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">+${members.length - 4} more</span>` : ''}
+                                               </div>`
+                                            : '<span class="text-gray-400">No members</span>';
+                                        
+                                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                                        
+                                        const typeHtml = item.static ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Static</span>' :
+                                                       item.dynamic ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Dynamic</span>' : '';
+                                        
+                                        return [
+                                            item.name,
+                                            typeHtml,
+                                            membersHtml,
+                                            location,
+                                            item.description || '-',
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.addressGroups = json.total_items;
+                                }
+                            }
+                        },
+                        columns: [
+                            { title: 'Name' },
+                            { title: 'Type' },
+                            { title: 'Members' },
+                            { title: 'Location' },
+                            { title: 'Description' },
+                            { title: 'Actions', orderable: false }
+                        ],
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
-
                         colReorder: true,
                         autoWidth: false,
-
                         buttons: [
                             {
                                 extend: 'colvis',
@@ -1492,27 +1655,42 @@
                             {
                                 extend: 'copy',
                                 text: '<i class="fas fa-copy"></i> Copy',
-                                className: 'dt-button-copy'
+                                className: 'dt-button-copy',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'csv',
                                 text: '<i class="fas fa-file-csv"></i> CSV',
-                                className: 'dt-button-csv'
+                                className: 'dt-button-csv',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="fas fa-file-excel"></i> Excel',
-                                className: 'dt-button-excel'
+                                className: 'dt-button-excel',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="fas fa-file-pdf"></i> PDF',
-                                className: 'dt-button-pdf'
+                                className: 'dt-button-pdf',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'print',
                                 text: '<i class="fas fa-print"></i> Print',
-                                className: 'dt-button-print'
+                                className: 'dt-button-print',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             }
                         ],
                         language: {
@@ -1520,6 +1698,7 @@
                             searchPlaceholder: "Search address groups...",
                             lengthMenu: "Show _MENU_ entries",
                             info: "Showing _START_ to _END_ of _TOTAL_ address groups",
+                            processing: '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin mr-2"></i>Loading address groups...</div>',
                             paginate: {
                                 first: "First",
                                 last: "Last",
@@ -1538,6 +1717,9 @@
                             }
                         }
                     });
+                    
+                    // Store table reference for later use
+                    this.addressGroupsTable = table;
                 },
                 
                 initServicesDataTable() {
@@ -1546,43 +1728,98 @@
                         $('#servicesTable').DataTable().destroy();
                     }
                     
-                    // Transform data for DataTable
-                    const tableData = this.currentData.map(item => {
-                        const protocolHtml = (item.protocol && item.protocol.tcp ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">TCP</span> ' : '') +
-                                           (item.protocol && item.protocol.udp ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">UDP</span>' : '');
-                        
-                        const port = this.getServicePort(item);
-                        
-                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
-                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
-                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
-                        
-                        return [
-                            item.name,
-                            protocolHtml,
-                            port,
-                            location,
-                            item.description || '-',
-                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                                <i class="fas fa-eye"></i> View
-                            </button>`
-                        ];
-                    });
-                    
                     // Make Alpine.js component available globally for onclick handlers
                     const alpineComponent = this;
                     window.configViewer = alpineComponent;
                     
-                    // Initialize DataTable
-                    $('#servicesTable').DataTable({
-                        data: tableData,
+                    // Initialize DataTable with server-side processing
+                    const table = $('#servicesTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/services`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._servicesTableDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                // Add column filters if present
+                                const tableFilters = alpineComponent.columnFilters['servicesTable'];
+                                if (tableFilters && Object.keys(tableFilters).length > 0) {
+                                    for (const [field, filter] of Object.entries(tableFilters)) {
+                                        if (filter.operator === 'equals' || filter.operator === 'contains') {
+                                            params[`filter[${field}]`] = filter.value;
+                                        } else {
+                                            params[`filter[${field}][${filter.operator}]`] = filter.value;
+                                        }
+                                    }
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._servicesTableDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(item => {
+                                        const protocolHtml = (item.protocol && item.protocol.tcp ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">TCP</span> ' : '') +
+                                                           (item.protocol && item.protocol.udp ? '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">UDP</span>' : '');
+                                        
+                                        const port = alpineComponent.getServicePort(item);
+                                        
+                                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                                        
+                                        return [
+                                            item.name,
+                                            protocolHtml,
+                                            port,
+                                            location,
+                                            item.description || '-',
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.services = json.total_items;
+                                }
+                            }
+                        },
+                        columns: [
+                            { title: 'Name' },
+                            { title: 'Protocol' },
+                            { title: 'Port' },
+                            { title: 'Location' },
+                            { title: 'Description' },
+                            { title: 'Actions', orderable: false }
+                        ],
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
-
                         colReorder: true,
                         autoWidth: false,
-
                         buttons: [
                             {
                                 extend: 'colvis',
@@ -1593,27 +1830,42 @@
                             {
                                 extend: 'copy',
                                 text: '<i class="fas fa-copy"></i> Copy',
-                                className: 'dt-button-copy'
+                                className: 'dt-button-copy',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'csv',
                                 text: '<i class="fas fa-file-csv"></i> CSV',
-                                className: 'dt-button-csv'
+                                className: 'dt-button-csv',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="fas fa-file-excel"></i> Excel',
-                                className: 'dt-button-excel'
+                                className: 'dt-button-excel',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="fas fa-file-pdf"></i> PDF',
-                                className: 'dt-button-pdf'
+                                className: 'dt-button-pdf',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'print',
                                 text: '<i class="fas fa-print"></i> Print',
-                                className: 'dt-button-print'
+                                className: 'dt-button-print',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             }
                         ],
                         language: {
@@ -1621,6 +1873,7 @@
                             searchPlaceholder: "Search services...",
                             lengthMenu: "Show _MENU_ entries",
                             info: "Showing _START_ to _END_ of _TOTAL_ services",
+                            processing: '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin mr-2"></i>Loading services...</div>',
                             paginate: {
                                 first: "First",
                                 last: "Last",
@@ -1639,6 +1892,9 @@
                             }
                         }
                     });
+                    
+                    // Store table reference for later use
+                    this.servicesTable = table;
                 },
                 
                 initServiceGroupsDataTable() {
@@ -1647,42 +1903,97 @@
                         $('#serviceGroupsTable').DataTable().destroy();
                     }
                     
-                    // Transform data for DataTable
-                    const tableData = this.currentData.map(item => {
-                        const members = item.members || [];
-                        const membersHtml = members.length > 0 
-                            ? `<div class="max-w-md inline-flex flex-wrap gap-1">
-                                ${members.slice(0, 4).map(m => `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">${m}</span>`).join('')}
-                                ${members.length > 4 ? `<span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">+${members.length - 4} more</span>` : ''}
-                               </div>`
-                            : '<span class="text-gray-400">No members</span>';
-                        
-                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
-                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
-                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
-                        
-                        return [
-                            item.name,
-                            membersHtml,
-                            location,
-                            item.description || '-',
-                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                                <i class="fas fa-eye"></i> View
-                            </button>`
-                        ];
-                    });
-                    
                     // Make Alpine.js component available globally for onclick handlers
                     const alpineComponent = this;
                     window.configViewer = alpineComponent;
                     
-                    // Initialize DataTable
-                    $('#serviceGroupsTable').DataTable({
-                        data: tableData,
+                    // Initialize DataTable with server-side processing
+                    const table = $('#serviceGroupsTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/service-groups`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._serviceGroupsTableDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                // Add column filters if present
+                                const tableFilters = alpineComponent.columnFilters['serviceGroupsTable'];
+                                if (tableFilters && Object.keys(tableFilters).length > 0) {
+                                    for (const [field, filter] of Object.entries(tableFilters)) {
+                                        if (filter.operator === 'equals' || filter.operator === 'contains') {
+                                            params[`filter[${field}]`] = filter.value;
+                                        } else {
+                                            params[`filter[${field}][${filter.operator}]`] = filter.value;
+                                        }
+                                    }
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._serviceGroupsTableDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(item => {
+                                        const members = item.members || [];
+                                        const membersHtml = members.length > 0 
+                                            ? `<div class="max-w-md inline-flex flex-wrap gap-1">
+                                                ${members.slice(0, 4).map(m => `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">${m}</span>`).join('')}
+                                                ${members.length > 4 ? `<span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-md">+${members.length - 4} more</span>` : ''}
+                                               </div>`
+                                            : '<span class="text-gray-400">No members</span>';
+                                        
+                                        const location = !item['parent-device-group'] && !item['parent-template'] ? '<span class="text-gray-400">Shared</span>' :
+                                                       item['parent-device-group'] ? `<span class="text-blue-600">DG: ${item['parent-device-group']}</span>` :
+                                                       item['parent-template'] ? `<span class="text-green-600">Template: ${item['parent-template']}</span>` : '';
+                                        
+                                        return [
+                                            item.name,
+                                            membersHtml,
+                                            location,
+                                            item.description || '-',
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.serviceGroups = json.total_items;
+                                }
+                            }
+                        },
+                        columns: [
+                            { title: 'Name' },
+                            { title: 'Members' },
+                            { title: 'Location' },
+                            { title: 'Description' },
+                            { title: 'Actions', orderable: false }
+                        ],
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
-
                         colReorder: true,
                         autoWidth: false,
                         buttons: [
@@ -1749,64 +2060,129 @@
                         $('#securityPoliciesTable').DataTable().destroy();
                     }
                     
-                    // Transform data for DataTable
-                    const tableData = this.currentData.map(rule => {
-                        // Helper function to format arrays with wrapping-friendly separators
-                        const formatArray = (arr) => {
-                            if (!arr || !Array.isArray(arr)) return arr || 'any';
-                            return arr.join(', ');
-                        };
-                        
-                        const fromZones = formatArray(rule.from_);
-                        const toZones = formatArray(rule.to);
-                        const sources = formatArray(rule.source);
-                        const destinations = formatArray(rule.destination);
-                        const applications = formatArray(rule.application);
-                        const services = formatArray(rule.service);
-                        
-                        const actionBadge = rule.action === 'allow' ? 
-                            '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Allow</span>' :
-                            rule.action === 'deny' ? 
-                            '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Deny</span>' :
-                            '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">' + rule.action + '</span>';
-                        
-                        const profileInfo = rule.profile_setting ? 'Enabled' : 'None';
-                        
-                        const statusBadge = rule.disabled ? 
-                            '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Disabled</span>' :
-                            '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Enabled</span>';
-                        
-                        const typeBadge = rule.parent_device_group ? 
-                            '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">Pre/Post</span>' :
-                            '<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Shared</span>';
-                        
-                        return [
-                            rule.order,
-                            rule.name,
-                            fromZones,
-                            toZones,
-                            sources,
-                            destinations,
-                            applications,
-                            services,
-                            actionBadge,
-                            profileInfo,
-                            rule.device_group || '-',
-                            typeBadge,
-                            statusBadge,
-                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(rule).replace(/"/g, '&quot;')})">
-                                <i class="fas fa-eye"></i> View
-                            </button>`
-                        ];
-                    });
-                    
                     // Make Alpine.js component available globally for onclick handlers
                     const alpineComponent = this;
                     window.configViewer = alpineComponent;
                     
-                    // Initialize DataTable
-                    $('#securityPoliciesTable').DataTable({
-                        data: tableData,
+                    // Initialize DataTable with server-side processing
+                    const table = $('#securityPoliciesTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/security-policies`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._securityPoliciesTableDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                // Add column filters if present
+                                const tableFilters = alpineComponent.columnFilters['securityPoliciesTable'];
+                                if (tableFilters && Object.keys(tableFilters).length > 0) {
+                                    for (const [field, filter] of Object.entries(tableFilters)) {
+                                        if (filter.operator === 'equals' || filter.operator === 'contains') {
+                                            params[`filter[${field}]`] = filter.value;
+                                        } else {
+                                            params[`filter[${field}][${filter.operator}]`] = filter.value;
+                                        }
+                                    }
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._securityPoliciesTableDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(rule => {
+                                        // Helper function to format arrays with wrapping-friendly separators
+                                        const formatArray = (arr) => {
+                                            if (!arr || !Array.isArray(arr)) return arr || 'any';
+                                            return arr.join(', ');
+                                        };
+                                        
+                                        const fromZones = formatArray(rule.from_);
+                                        const toZones = formatArray(rule.to);
+                                        const sources = formatArray(rule.source);
+                                        const destinations = formatArray(rule.destination);
+                                        const applications = formatArray(rule.application);
+                                        const services = formatArray(rule.service);
+                                        
+                                        const actionBadge = rule.action === 'allow' ? 
+                                            '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Allow</span>' :
+                                            rule.action === 'deny' ? 
+                                            '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Deny</span>' :
+                                            '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">' + rule.action + '</span>';
+                                        
+                                        const profileInfo = rule.profile_setting ? 'Enabled' : 'None';
+                                        
+                                        const statusBadge = rule.disabled ? 
+                                            '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Disabled</span>' :
+                                            '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Enabled</span>';
+                                        
+                                        const typeBadge = rule.parent_device_group ? 
+                                            '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">Pre/Post</span>' :
+                                            '<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Shared</span>';
+                                        
+                                        return [
+                                            rule.order,
+                                            rule.name,
+                                            fromZones,
+                                            toZones,
+                                            sources,
+                                            destinations,
+                                            applications,
+                                            services,
+                                            actionBadge,
+                                            profileInfo,
+                                            rule.device_group || '-',
+                                            typeBadge,
+                                            statusBadge,
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(rule).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.securityPolicies = json.total_items;
+                                }
+                            }
+                        },
+                        columns: [
+                            { title: 'Order' },
+                            { title: 'Name' },
+                            { title: 'From Zone' },
+                            { title: 'To Zone' },
+                            { title: 'Source' },
+                            { title: 'Destination' },
+                            { title: 'Application' },
+                            { title: 'Service' },
+                            { title: 'Action' },
+                            { title: 'Profile' },
+                            { title: 'Device Group' },
+                            { title: 'Type' },
+                            { title: 'Status' },
+                            { title: 'Actions', orderable: false }
+                        ],
                         pageLength: 25,
                         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                         dom: 'Blfrtip',
@@ -1823,17 +2199,26 @@
                             {
                                 extend: 'copy',
                                 text: '<i class="fas fa-copy"></i> Copy',
-                                className: 'dt-button-copy'
+                                className: 'dt-button-copy',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'csv',
                                 text: '<i class="fas fa-file-csv"></i> CSV',
-                                className: 'dt-button-csv'
+                                className: 'dt-button-csv',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="fas fa-file-excel"></i> Excel',
-                                className: 'dt-button-excel'
+                                className: 'dt-button-excel',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
                             }
                         ],
                         language: {
@@ -1847,7 +2232,8 @@
                                 next: "Next",
                                 previous: "Previous"
                             },
-                            emptyTable: "No security policies found"
+                            emptyTable: "No security policies found",
+                            processing: "Loading security policies..."
                         },
                         initComplete: function () {
                             var api = this.api();
@@ -1859,45 +2245,18 @@
                             }
                         }
                     });
+                    
+                    // Store table reference for later use
+                    this.securityPoliciesTable = table;
                 },
                 
                 async loadAddressGroups() {
                     this.loading = true;
                     try {
-                        // Fetch from all sources
-                        const [sharedResp, deviceGroupsResp] = await Promise.all([
-                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/address-groups`),
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
-                        ]);
-                        
-                        const sharedGroups = await sharedResp.json();
-                        const deviceGroups = await deviceGroupsResp.json();
-                        
-                        let allGroups = [...sharedGroups];
-                        
-                        // Fetch from each device group
-                        const dgGroupPromises = deviceGroups.map(dg => 
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/address-groups`)
-                                .then(resp => resp.json())
-                                .catch(() => [])
-                        );
-                        
-                        const dgGroupResults = await Promise.all(dgGroupPromises);
-                        dgGroupResults.forEach(groups => {
-                            allGroups = allGroups.concat(groups);
-                        });
-                        
-                        // Remove duplicates
-                        const uniqueGroups = Array.from(
-                            new Map(allGroups.map(group => [group.name, group])).values()
-                        );
-                        
-                        this.currentData = uniqueGroups;
-                        this.filteredData = [...this.currentData];
-                        this.stats.addressGroups = this.currentData.length;
+                        // Initialize DataTable with server-side processing
                         this.initAddressGroupsDataTable();
                     } catch (error) {
-                        console.error('Failed to load address groups:', error);
+                        console.error('Failed to initialize address groups table:', error);
                     } finally {
                         this.loading = false;
                     }
@@ -1906,40 +2265,10 @@
                 async loadServices() {
                     this.loading = true;
                     try {
-                        // Fetch from all sources
-                        const [sharedResp, deviceGroupsResp] = await Promise.all([
-                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/services`),
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
-                        ]);
-                        
-                        const sharedServices = await sharedResp.json();
-                        const deviceGroups = await deviceGroupsResp.json();
-                        
-                        let allServices = [...sharedServices];
-                        
-                        // Fetch from each device group
-                        const dgServicePromises = deviceGroups.map(dg => 
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/services`)
-                                .then(resp => resp.json())
-                                .catch(() => [])
-                        );
-                        
-                        const dgServiceResults = await Promise.all(dgServicePromises);
-                        dgServiceResults.forEach(services => {
-                            allServices = allServices.concat(services);
-                        });
-                        
-                        // Remove duplicates
-                        const uniqueServices = Array.from(
-                            new Map(allServices.map(svc => [svc.name, svc])).values()
-                        );
-                        
-                        this.currentData = uniqueServices;
-                        this.filteredData = [...this.currentData];
-                        this.stats.services = this.currentData.length;
+                        // Initialize DataTable with server-side processing
                         this.initServicesDataTable();
                     } catch (error) {
-                        console.error('Failed to load services:', error);
+                        console.error('Failed to initialize services table:', error);
                     } finally {
                         this.loading = false;
                     }
@@ -1948,40 +2277,10 @@
                 async loadServiceGroups() {
                     this.loading = true;
                     try {
-                        // Fetch from all sources
-                        const [sharedResp, deviceGroupsResp] = await Promise.all([
-                            fetch(`/api/v1/configs/${this.selectedConfig}/shared/service-groups`),
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`)
-                        ]);
-                        
-                        const sharedGroups = await sharedResp.json();
-                        const deviceGroups = await deviceGroupsResp.json();
-                        
-                        let allGroups = [...sharedGroups];
-                        
-                        // Fetch from each device group
-                        const dgGroupPromises = deviceGroups.map(dg => 
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/service-groups`)
-                                .then(resp => resp.json())
-                                .catch(() => [])
-                        );
-                        
-                        const dgGroupResults = await Promise.all(dgGroupPromises);
-                        dgGroupResults.forEach(groups => {
-                            allGroups = allGroups.concat(groups);
-                        });
-                        
-                        // Remove duplicates
-                        const uniqueGroups = Array.from(
-                            new Map(allGroups.map(group => [group.name, group])).values()
-                        );
-                        
-                        this.currentData = uniqueGroups;
-                        this.filteredData = [...this.currentData];
-                        this.stats.serviceGroups = this.currentData.length;
+                        // Initialize DataTable with server-side processing
                         this.initServiceGroupsDataTable();
                     } catch (error) {
-                        console.error('Failed to load service groups:', error);
+                        console.error('Failed to initialize service groups table:', error);
                     } finally {
                         this.loading = false;
                     }
@@ -1990,66 +2289,295 @@
                 async loadDeviceGroups() {
                     this.loading = true;
                     try {
-                        const response = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`);
-                        this.currentData = await response.json();
-                        this.filteredData = [...this.currentData];
+                        // Initialize DataTable with server-side processing
+                        this.initDeviceGroupsDataTable();
                     } catch (error) {
-                        console.error('Failed to load device groups:', error);
+                        console.error('Failed to initialize device groups table:', error);
                     } finally {
                         this.loading = false;
                     }
+                },
+                
+                initDeviceGroupsDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#deviceGroupsTable')) {
+                        $('#deviceGroupsTable').DataTable().destroy();
+                    }
+                    
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
+                    
+                    // Initialize DataTable with server-side processing
+                    const table = $('#deviceGroupsTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/device-groups`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._deviceGroupsTableDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._deviceGroupsTableDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(dg => {
+                                        return [
+                                            dg.name,
+                                            dg.description || '-',
+                                            dg.parent_dg || '<span class="text-gray-400">None</span>',
+                                            `<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">${dg.address_count || 0}</span>`,
+                                            `<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">${dg.service_count || 0}</span>`,
+                                            `<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">${dg.pre_security_rules_count || 0}</span>`,
+                                            `<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">${dg.post_security_rules_count || 0}</span>`,
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDeviceGroupDetail(${JSON.stringify(dg).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.deviceGroups = json.total_items;
+                                }
+                            }
+                        },
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Blfrtip',
+                        colReorder: true,
+                        autoWidth: false,
+                        buttons: [
+                            {
+                                extend: 'colvis',
+                                text: '<i class="fas fa-columns"></i> Columns',
+                                className: 'dt-button-colvis',
+                                columns: ':not(.noVis)'
+                            },
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
+                            }
+                        ],
+                        language: {
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search device groups...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ device groups",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No device groups found",
+                            processing: "Loading device groups..."
+                        },
+                        initComplete: function () {
+                            var api = this.api();
+                            var self = window.configViewer; // Use the preserved Alpine component
+                            
+                            // Add enhanced column filters (skip Actions column)
+                            if (self && self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [7]);
+                            }
+                        }
+                    });
+                    
+                    // Store table reference for later use
+                    this.deviceGroupsTable = table;
                 },
                 
                 async loadTemplates() {
                     this.loading = true;
                     try {
-                        const response = await fetch(`/api/v1/configs/${this.selectedConfig}/templates`);
-                        this.currentData = await response.json();
-                        this.filteredData = [...this.currentData];
-                        this.stats.templates = this.currentData.length;
+                        // Initialize DataTable with server-side processing
+                        this.initTemplatesDataTable();
                     } catch (error) {
-                        console.error('Failed to load templates:', error);
+                        console.error('Failed to initialize templates table:', error);
                     } finally {
                         this.loading = false;
                     }
                 },
                 
+                initTemplatesDataTable() {
+                    // Destroy existing DataTable if it exists
+                    if ($.fn.DataTable.isDataTable('#templatesTable')) {
+                        $('#templatesTable').DataTable().destroy();
+                    }
+                    
+                    // Make Alpine.js component available globally for onclick handlers
+                    const alpineComponent = this;
+                    window.configViewer = alpineComponent;
+                    
+                    // Initialize DataTable with server-side processing
+                    const table = $('#templatesTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: {
+                            url: `/api/v1/configs/${this.selectedConfig}/templates`,
+                            type: 'GET',
+                            data: function(d) {
+                                // Store draw for later use
+                                alpineComponent._templatesTableDraw = d.draw;
+                                
+                                // Map DataTables parameters to API parameters
+                                const params = {
+                                    page: Math.floor(d.start / d.length) + 1,
+                                    page_size: d.length === -1 ? 10000 : d.length,
+                                    disable_paging: d.length === -1
+                                };
+                                
+                                // Add search parameter if present
+                                if (d.search && d.search.value) {
+                                    params.name = d.search.value;
+                                }
+                                
+                                return params;
+                            },
+                            dataFilter: function(data) {
+                                const json = JSON.parse(data);
+                                // Map API response to DataTables format
+                                return JSON.stringify({
+                                    draw: alpineComponent._templatesTableDraw || 1,
+                                    recordsTotal: json.total_items,
+                                    recordsFiltered: json.total_items,
+                                    data: json.items.map(template => {
+                                        return [
+                                            template.name,
+                                            template.description || '-',
+                                            `<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">${template.device_count || 0}</span>`,
+                                            `<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">${template.config?.devices?.entry?.length || 0}</span>`,
+                                            `<button class="text-blue-600 hover:text-blue-800" onclick="window.configViewer.showDetail(${JSON.stringify(template).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>`
+                                        ];
+                                    })
+                                });
+                            },
+                            complete: function(xhr) {
+                                // Update stats after successful load
+                                if (xhr.status === 200) {
+                                    const json = JSON.parse(xhr.responseText);
+                                    alpineComponent.stats.templates = json.total_items;
+                                }
+                            }
+                        },
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: 'Blfrtip',
+                        colReorder: true,
+                        autoWidth: false,
+                        buttons: [
+                            {
+                                extend: 'colvis',
+                                text: '<i class="fas fa-columns"></i> Columns',
+                                className: 'dt-button-colvis',
+                                columns: ':not(.noVis)'
+                            },
+                            {
+                                extend: 'copy',
+                                text: '<i class="fas fa-copy"></i> Copy',
+                                className: 'dt-button-copy',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="fas fa-file-csv"></i> CSV',
+                                className: 'dt-button-csv',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="fas fa-file-excel"></i> Excel',
+                                className: 'dt-button-excel',
+                                exportOptions: {
+                                    columns: ':visible:not(:last-child)'
+                                }
+                            }
+                        ],
+                        language: {
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search templates...",
+                            lengthMenu: "Show _MENU_ entries",
+                            info: "Showing _START_ to _END_ of _TOTAL_ templates",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No templates found",
+                            processing: "Loading templates..."
+                        },
+                        initComplete: function () {
+                            var api = this.api();
+                            var self = window.configViewer; // Use the preserved Alpine component
+                            
+                            // Add enhanced column filters (skip Actions column)
+                            if (self && self.addEnhancedColumnFilters) {
+                                self.addEnhancedColumnFilters(api, [4]);
+                            }
+                        }
+                    });
+                    
+                    // Store table reference for later use
+                    this.templatesTable = table;
+                },
+                
                 async loadSecurityPolicies() {
                     this.loading = true;
                     try {
-                        // Fetch device groups first
-                        const dgResp = await fetch(`/api/v1/configs/${this.selectedConfig}/device-groups`);
-                        const deviceGroups = await dgResp.json();
-                        
-                        let allRules = [];
-                        
-                        // Fetch security rules from each device group
-                        const rulePromises = deviceGroups.map(dg => 
-                            fetch(`/api/v1/configs/${this.selectedConfig}/device-groups/${dg.name}/rules`)
-                                .then(resp => resp.json())
-                                .then(rules => rules.map((rule, index) => ({
-                                    ...rule,
-                                    device_group: dg.name,
-                                    rule_type: rule.parent_device_group ? 'Device Group' : 'Shared',
-                                    order: index + 1,
-                                    rulebase_location: `${dg.name} #${index + 1}`
-                                })))
-                                .catch(() => [])
-                        );
-                        
-                        const ruleResults = await Promise.all(rulePromises);
-                        ruleResults.forEach(rules => {
-                            allRules = allRules.concat(rules);
-                        });
-                        
-                        this.currentData = allRules;
-                        this.filteredData = [...this.currentData];
-                        this.stats.securityPolicies = this.currentData.length;
-                        
-                        // Initialize DataTable
+                        // Initialize DataTable with server-side processing
                         this.initSecurityPoliciesDataTable();
                     } catch (error) {
-                        console.error('Failed to load security policies:', error);
+                        console.error('Failed to initialize security policies table:', error);
                     } finally {
                         this.loading = false;
                     }
@@ -2136,8 +2664,70 @@
                     }
                 },
                 
+                // Store column filters for server-side processing
+                columnFilters: {},
+                
+                // Debounce timer for column filters
+                filterDebounceTimer: null,
+                
+                // Helper function to build filter regex for client-side filtering
+                buildFilterRegex(operator, value) {
+                    const escapedValue = value.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                    
+                    switch (operator) {
+                        case 'contains':
+                            return escapedValue;
+                        case 'not_contains':
+                            return '^(?!.*' + escapedValue + ')';
+                        case 'equals':
+                            return '^' + escapedValue + '$';
+                        case 'ne':
+                        case 'not_equals':
+                            return '^(?!' + escapedValue + '$)';
+                        case 'starts':
+                        case 'starts_with':
+                            return '^' + escapedValue;
+                        case 'ends':
+                        case 'ends_with':
+                            return escapedValue + '$';
+                        case 'empty':
+                            return '^\\s*$';
+                        case 'not_empty':
+                            return '^(?!\\s*$)';
+                        default:
+                            return escapedValue;
+                    }
+                },
+                
+                // Helper function to get column name mapping for each table
+                getColumnFieldMapping(tableId, columnIndex) {
+                    const mappings = {
+                        'addressesTable': ['name', 'type', 'value', 'location', 'description'],
+                        'addressGroupsTable': ['name', 'type', 'members', 'location', 'description'],
+                        'servicesTable': ['name', 'protocol', 'port', 'location', 'description'],
+                        'serviceGroupsTable': ['name', 'members', 'location', 'description'],
+                        'securityPoliciesTable': ['order', 'name', 'rule_type', 'source_zones', 'source_addresses', 
+                                                'destination_zones', 'destination_addresses', 'applications', 
+                                                'services', 'action', 'log_setting', 'profile_settings', 'description'],
+                        'deviceGroupsTable': ['name', 'parent', 'devices', 'addresses', 'services', 'policies', 'description'],
+                        'templatesTable': ['name', 'devices', 'variables', 'description']
+                    };
+                    
+                    return mappings[tableId] ? mappings[tableId][columnIndex] : null;
+                },
+                
                 // Helper function to add enhanced column filters
                 addEnhancedColumnFilters(api, skipColumns = []) {
+                    // Check if server-side processing is enabled
+                    const isServerSide = api.settings()[0].oFeatures.bServerSide;
+                    const tableId = api.table().node().id;
+                    const self = this;
+                    
+                    // Initialize column filters for this table if not exists
+                    if (!self.columnFilters[tableId]) {
+                        self.columnFilters[tableId] = {};
+                    }
+                    
                     // Add burger menu icons to column headers
                     api.columns().every(function (index) {
                         // Skip specified columns
@@ -2145,9 +2735,10 @@
                         
                         var column = this;
                         var $header = $(column.header());
+                        const columnField = self.getColumnFieldMapping(tableId, index);
                         
-                        // Skip if burger menu already exists
-                        if ($header.find('.column-burger-menu').length > 0) return;
+                        // Skip if no field mapping or burger menu already exists
+                        if (!columnField || $header.find('.column-burger-menu').length > 0) return;
                         
                         // Create burger menu icon
                         var burgerMenu = $('<span class="column-burger-menu" title="Filter options">' +
@@ -2162,9 +2753,9 @@
                                     '<option value="contains">Contains</option>' +
                                     '<option value="not_contains">Does not contain</option>' +
                                     '<option value="equals">Equals</option>' +
-                                    '<option value="not_equals">Does not equal</option>' +
-                                    '<option value="starts">Starts with</option>' +
-                                    '<option value="ends">Ends with</option>' +
+                                    '<option value="ne">Does not equal</option>' +
+                                    '<option value="starts_with">Starts with</option>' +
+                                    '<option value="ends_with">Ends with</option>' +
                                     '<option value="empty">Empty</option>' +
                                     '<option value="not_empty">Not empty</option>' +
                                 '</select>' +
@@ -2191,6 +2782,9 @@
                                 '<button type="button" class="filter-action-btn primary apply-filter">Apply</button>' +
                                 '<button type="button" class="filter-action-btn clear-filter">Clear</button>' +
                             '</div>' +
+                            '<div class="filter-loading" style="display: none;">' +
+                                '<i class="fas fa-spinner fa-spin"></i> Applying filter...' +
+                            '</div>' +
                             '</div>');
                         
                         // Add burger menu to header (next to existing content)
@@ -2210,14 +2804,48 @@
                             burgerMenu.toggleClass('active');
                         });
                         
-                        // Apply filter
-                        dropdown.find('.apply-filter').on('click', function() {
+                        // Apply filter with debouncing for search input
+                        const applyFilter = function() {
                             var operator = dropdown.find('.filter-operator-select').val();
                             var value = dropdown.find('.filter-search-input').val();
                             
                             if (value || operator === 'empty' || operator === 'not_empty') {
-                                var searchRegex = window.configViewer.buildFilterRegex(operator, value);
-                                column.search(searchRegex, true, false).draw();
+                                if (isServerSide) {
+                                    // Show loading indicator
+                                    dropdown.find('.filter-loading').show();
+                                    dropdown.find('.filter-actions').hide();
+                                    
+                                    // Store filter in columnFilters
+                                    if (operator === 'empty' || operator === 'not_empty') {
+                                        self.columnFilters[tableId][columnField] = {
+                                            operator: operator === 'empty' ? 'equals' : 'ne',
+                                            value: ''
+                                        };
+                                    } else if (operator === 'not_contains') {
+                                        // Backend doesn't support not_contains, we'll need to handle this client-side
+                                        console.warn('not_contains operator not supported server-side, using contains for now');
+                                        self.columnFilters[tableId][columnField] = {
+                                            operator: 'contains',
+                                            value: value
+                                        };
+                                    } else {
+                                        self.columnFilters[tableId][columnField] = {
+                                            operator: operator,
+                                            value: value
+                                        };
+                                    }
+                                    
+                                    // Trigger table redraw which will include filters in request
+                                    api.ajax.reload(function() {
+                                        // Hide loading indicator
+                                        dropdown.find('.filter-loading').hide();
+                                        dropdown.find('.filter-actions').show();
+                                    });
+                                } else {
+                                    // Client-side filtering with regex
+                                    var searchRegex = self.buildFilterRegex(operator, value);
+                                    column.search(searchRegex, true, false).draw();
+                                }
                                 
                                 // Visual feedback - highlight burger menu when filter is active
                                 burgerMenu.addClass('filtered');
@@ -2225,11 +2853,46 @@
                             
                             dropdown.removeClass('show');
                             burgerMenu.removeClass('active');
+                        };
+                        
+                        // Apply filter button
+                        dropdown.find('.apply-filter').on('click', applyFilter);
+                        
+                        // Debounced search input
+                        dropdown.find('.filter-search-input').on('keyup', function(e) {
+                            // Apply immediately on Enter
+                            if (e.keyCode === 13) {
+                                applyFilter();
+                                return;
+                            }
+                            
+                            // Otherwise debounce
+                            clearTimeout(self.filterDebounceTimer);
+                            self.filterDebounceTimer = setTimeout(function() {
+                                if (isServerSide && dropdown.find('.filter-search-input').val()) {
+                                    applyFilter();
+                                }
+                            }, 500); // 500ms debounce
                         });
                         
                         // Clear filter
                         dropdown.find('.clear-filter').on('click', function() {
-                            column.search('').draw();
+                            if (isServerSide) {
+                                // Remove filter from columnFilters
+                                delete self.columnFilters[tableId][columnField];
+                                
+                                // Show loading
+                                dropdown.find('.filter-loading').show();
+                                dropdown.find('.filter-actions').hide();
+                                
+                                // Trigger table redraw
+                                api.ajax.reload(function() {
+                                    dropdown.find('.filter-loading').hide();
+                                    dropdown.find('.filter-actions').show();
+                                });
+                            } else {
+                                column.search('').draw();
+                            }
                             dropdown.find('.filter-search-input').val('');
                             dropdown.find('.filter-operator-select').val('contains');
                             burgerMenu.removeClass('filtered');
@@ -2245,12 +2908,11 @@
                             $(this).addClass('active');
                             
                             if (sortType === 'clear') {
-                                column.order('');
+                                api.order.neutral().draw();
                             } else {
-                                column.order(sortType);
+                                column.order(sortType).draw();
                             }
                             
-                            api.draw();
                             dropdown.removeClass('show');
                             burgerMenu.removeClass('active');
                         });

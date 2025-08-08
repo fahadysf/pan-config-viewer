@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot Tests for UI Components filter controls snapshot 1`] = `
+"
+            <div class="column-filters">
+                <input type="text" class="column-filter" data-column="0" placeholder="Filter by name">
+                <input type="text" class="column-filter" data-column="1" placeholder="Filter by IP">
+                <select class="column-filter" data-column="2">
+                    <option value="">All Protocols</option>
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                </select>
+            </div>
+        "
+`;
+
+exports[`Snapshot Tests for UI Components pagination controls snapshot 1`] = `
+"
+            <div class="dataTables_paginate">
+                <a class="paginate_button previous disabled">Previous</a>
+                <span>
+                    <a class="paginate_button current">1</a>
+                    <a class="paginate_button">2</a>
+                    <a class="paginate_button">3</a>
+                </span>
+                <a class="paginate_button next">Next</a>
+            </div>
+        "
+`;
+
+exports[`Snapshot Tests for UI Components table with data snapshot 1`] = `
+{
+  "headers": [
+    "Name",
+    "IP",
+    "Description",
+  ],
+  "pagination": {
+    "current": 1,
+    "showing": "1-10 of 100",
+    "total": 10,
+  },
+  "rows": [
+    [
+      "10.0.0.1",
+      "10.0.0.1/32",
+      "Test address 1",
+    ],
+    [
+      "10.0.0.2",
+      "10.0.0.2/32",
+      "Test address 2",
+    ],
+  ],
+}
+`;

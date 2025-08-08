@@ -233,6 +233,11 @@ class SecurityRule(ConfigLocation):
     disabled: Optional[bool] = Field(False, description="Rule disabled")
     description: Optional[str] = Field(None, description="Rule description")
     tag: Optional[List[str]] = Field(None, description="Tags")
+    # Runtime metadata fields (populated dynamically)
+    device_group: Optional[str] = Field(None, description="Device group name (runtime)")
+    rule_type: Optional[str] = Field(None, description="Rule type (runtime)")
+    order: Optional[int] = Field(None, description="Rule order (runtime)")
+    rulebase_location: Optional[str] = Field(None, description="Rule location (runtime)")
 
 
 class NATRule(ConfigLocation):
@@ -248,6 +253,11 @@ class NATRule(ConfigLocation):
     disabled: Optional[bool] = Field(False, description="Rule disabled")
     description: Optional[str] = Field(None, description="Rule description")
     tag: Optional[List[str]] = Field(None, description="Tags")
+    # Runtime metadata fields (populated dynamically)
+    device_group: Optional[str] = Field(None, description="Device group name (runtime)")
+    rule_type: Optional[str] = Field(None, description="Rule type (runtime)")
+    order: Optional[int] = Field(None, description="Rule order (runtime)")
+    rulebase_location: Optional[str] = Field(None, description="Rule location (runtime)")
 
 
 class DeviceGroup(ConfigLocation):
@@ -315,3 +325,21 @@ class PanoramaConfig(ConfigLocation):
     
     class Config:
         populate_by_name = True
+
+
+class PaginationParams(BaseModel):
+    """Pagination query parameters"""
+    page: int = Field(1, ge=1, description="Page number (1-based)")
+    page_size: int = Field(500, ge=1, le=10000, description="Number of items per page")
+    disable_paging: bool = Field(False, description="Return all results without pagination")
+
+
+class PaginatedResponse(BaseModel):
+    """Generic paginated response wrapper"""
+    items: List[Any] = Field(..., description="List of items for current page")
+    total_items: int = Field(..., description="Total number of items")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Items per page")
+    total_pages: int = Field(..., description="Total number of pages")
+    has_next: bool = Field(..., description="Whether there is a next page")
+    has_previous: bool = Field(..., description="Whether there is a previous page")
