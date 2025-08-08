@@ -299,7 +299,7 @@ class TestDeviceGroupEndpoints:
     def test_get_device_group_addresses_with_filter(self):
         """Test filtering addresses in a device group"""
         # Test name filter
-        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses?filter[name][contains]=server")
+        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses?filter.name.contains=server")
         assert response.status_code == 200
         data = response.json()
         addresses = data["items"]
@@ -307,7 +307,7 @@ class TestDeviceGroupEndpoints:
         assert "server" in addresses[0]["name"].lower()
         
         # Test that non-matching filter returns empty
-        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses?filter[name][eq]=nonexistent")
+        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses?filter.name.eq=nonexistent")
         assert response.status_code == 200
         data = response.json()
         assert data["items"] == []
@@ -382,7 +382,7 @@ class TestDeviceGroupEndpoints:
     def test_get_device_group_services_with_filter(self):
         """Test filtering services in a device group"""
         # Test protocol filter
-        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/services?filter[protocol][eq]=tcp")
+        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/services?filter.protocol.eq=tcp")
         assert response.status_code == 200
         data = response.json()
         services = data["items"]
@@ -553,21 +553,21 @@ class TestLocationTracking:
     def test_filtering_with_advanced_operators(self):
         """Test advanced filtering operators across endpoints"""
         # Test starts_with operator
-        response = client.get("/api/v1/configs/test_panorama/addresses?filter[name][starts_with]=test")
+        response = client.get("/api/v1/configs/test_panorama/addresses?filter.name.starts_with=test")
         assert response.status_code == 200
         data = response.json()
         addresses = data["items"]
         assert all(addr["name"].startswith("test") for addr in addresses)
         
         # Test ends_with operator
-        response = client.get("/api/v1/configs/test_panorama/addresses?filter[name][ends_with]=server")
+        response = client.get("/api/v1/configs/test_panorama/addresses?filter.name.ends_with=server")
         assert response.status_code == 200
         data = response.json()
         addresses = data["items"]
         assert all(addr["name"].endswith("server") for addr in addresses)
         
         # Test not_equals operator
-        response = client.get("/api/v1/configs/test_panorama/addresses?filter[name][ne]=test-server")
+        response = client.get("/api/v1/configs/test_panorama/addresses?filter.name.ne=test-server")
         assert response.status_code == 200
         data = response.json()
         addresses = data["items"]
