@@ -1,9 +1,16 @@
-# PAN-OS Panorama Configuration API
+# PAN Config Viewer API
 
-A FastAPI-based REST API for exploring Panorama PAN-OS configuration from XML backup files. This application parses Panorama configuration XML files and provides a comprehensive API to access various configuration objects.
+![PAN Config Viewer Logo](docs/assets/logo.svg)
+
+[![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/fahadysf/pan-config-viewer)
+[![Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)](https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+A powerful REST API for querying and analyzing PAN-OS Panorama configurations with advanced filtering capabilities. This application parses Panorama configuration XML files and provides a comprehensive API to access various configuration objects.
 
 ## Features
 
+- **Advanced Filtering System** - 15+ operators for precise queries (equals, contains, starts_with, ends_with, gt, lt, regex, etc.)
 - **Real-time XML parsing** - Reads configuration directly from XML file
 - **Comprehensive API endpoints** for:
   - Address Objects and Address Groups
@@ -21,8 +28,8 @@ A FastAPI-based REST API for exploring Panorama PAN-OS configuration from XML ba
 - **Multi-location support** - Objects from shared, device-groups, templates, and vsys
 - **XPath search** - Find any object by its exact XML path
 - **Auto-generated Swagger documentation**
-- **Filtering support** on most endpoints
-- **Pydantic models** for data validation and serialization
+- **Smart Pagination** - Efficient handling of large result sets
+- **Pydantic v2 models** for data validation and serialization
 - **Docker support** for easy deployment
 
 ## Quick Start with Docker
@@ -121,12 +128,30 @@ Or with uvicorn directly:
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## API Documentation
+## Documentation
 
-Once the application is running, access the interactive API documentation at:
+Full documentation is available at:
+- **[Read the Docs](https://pan-config-viewer.readthedocs.io)** - Comprehensive documentation with filtering guides
+- **[API Documentation](http://localhost:8000/docs)** - Interactive Swagger UI (when running locally)
+- **[ReDoc](http://localhost:8000/redoc)** - Alternative API documentation (when running locally)
+- **[GitHub Pages](https://fahadysf.github.io/pan-config-viewer)** - Mirror of documentation
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### Building Documentation Locally
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install MkDocs dependencies
+pip install -r docs/requirements.txt
+
+# Serve documentation locally
+mkdocs serve
+
+# Build static documentation
+mkdocs build
+```
 
 ## API Endpoints
 
@@ -171,15 +196,34 @@ Once the application is running, access the interactive API documentation at:
 
 **Note**: Replace `{config_name}` with the name of your XML file (without the .xml extension)
 
-## Query Parameters
+## Advanced Filtering System
 
-Most endpoints support filtering:
-- `name` - Filter by name (partial match)
-- `tag` - Filter by tag (where applicable)
-- `protocol` - Filter by protocol (for services)
-- `parent` - Filter by parent (for device groups)
-- `rulebase` - Filter by rulebase type (for security rules)
-- `location` - Filter by location (all/shared/device-group/template/vsys) for addresses
+The API supports advanced filtering with multiple operators:
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `equals` / `eq` | Exact match | `filter.name.equals=web-server` |
+| `contains` | Substring match | `filter.description.contains=production` |
+| `starts_with` | Prefix match | `filter.ip.starts_with=192.168` |
+| `ends_with` | Suffix match | `filter.fqdn.ends_with=.example.com` |
+| `gt`, `lt`, `gte`, `lte` | Numeric comparisons | `filter.port.gte=8000` |
+| `in`, `not_in` | List membership | `filter.tag.in=critical` |
+| `regex` | Pattern matching | `filter.name.regex=^srv-.*-prod$` |
+
+See the [full operator documentation](https://pan-config-viewer.readthedocs.io/en/latest/guides/filtering/operators/) for all available operators.
+
+### Query Examples
+
+```bash
+# Find addresses with specific IP prefix
+curl "http://localhost:8000/api/v1/configs/panorama/addresses?filter.ip.starts_with=10.0"
+
+# Find services on high ports
+curl "http://localhost:8000/api/v1/configs/panorama/services?filter.port.gt=8000"
+
+# Find security rules with complex criteria
+curl "http://localhost:8000/api/v1/configs/panorama/rules/security?filter.action.equals=allow&filter.source_zone.in=trust"
+```
 
 ## Enhanced Object Information
 

@@ -1,5 +1,7 @@
 # Quick Start Guide
 
+![PAN Config Viewer Logo](../assets/logo-icon.svg){ width="64" align="right" }
+
 Get up and running with the PAN Config Viewer API in minutes!
 
 ## Prerequisites

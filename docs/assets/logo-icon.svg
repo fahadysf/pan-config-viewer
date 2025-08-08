@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- PAN Config Viewer Icon - Simplified version -->
+  
+  <!-- Background -->
+  <rect width="64" height="64" fill="#FFFFFF"/>
+  
+  <!-- Grid pattern - 3x3 with center emphasis -->
+  <rect x="8" y="8" width="14" height="14" fill="#F04E23"/>
+  <rect x="25" y="8" width="14" height="14" fill="#F26739"/>
+  <rect x="42" y="8" width="14" height="14" fill="#F58B4C"/>
+  
+  <rect x="8" y="25" width="14" height="14" fill="#F26739"/>
+  <rect x="25" y="25" width="14" height="14" fill="#1B1B1B"/>
+  <rect x="42" y="25" width="14" height="14" fill="#F26739"/>
+  
+  <rect x="8" y="42" width="14" height="14" fill="#F58B4C"/>
+  <rect x="25" y="42" width="14" height="14" fill="#F26739"/>
+  <rect x="42" y="42" width="14" height="14" fill="#F04E23"/>
+</svg>

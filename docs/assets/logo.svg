@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- PAN Config Viewer Logo - Grid pattern representing configuration structure -->
+  
+  <!-- Background -->
+  <rect width="200" height="200" fill="#FFFFFF"/>
+  
+  <!-- Main squares - representing config hierarchy -->
+  <!-- Top row - API layer -->
+  <rect x="20" y="20" width="40" height="40" fill="#F04E23" opacity="1"/>
+  <rect x="80" y="20" width="40" height="40" fill="#F26739" opacity="0.9"/>
+  <rect x="140" y="20" width="40" height="40" fill="#F58B4C" opacity="0.8"/>
+  
+  <!-- Middle row - Filter/Query layer -->
+  <rect x="20" y="80" width="40" height="40" fill="#F26739" opacity="0.9"/>
+  <rect x="80" y="80" width="40" height="40" fill="#1B1B1B" opacity="1"/>
+  <rect x="140" y="80" width="40" height="40" fill="#F26739" opacity="0.9"/>
+  
+  <!-- Bottom row - Data layer -->
+  <rect x="20" y="140" width="40" height="40" fill="#F58B4C" opacity="0.8"/>
+  <rect x="80" y="140" width="40" height="40" fill="#F26739" opacity="0.9"/>
+  <rect x="140" y="140" width="40" height="40" fill="#F04E23" opacity="1"/>
+  
+  <!-- Accent squares - representing filtering/connections -->
+  <rect x="50" y="50" width="20" height="20" fill="#FF7F50" opacity="0.6"/>
+  <rect x="130" y="50" width="20" height="20" fill="#FF7F50" opacity="0.6"/>
+  <rect x="50" y="130" width="20" height="20" fill="#FF7F50" opacity="0.6"/>
+  <rect x="130" y="130" width="20" height="20" fill="#FF7F50" opacity="0.6"/>
+  
+  <!-- Center highlight -->
+  <rect x="90" y="90" width="20" height="20" fill="#FFFFFF" opacity="0.8"/>
+</svg>
