@@ -1,19 +1,174 @@
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { ColumnDef } from '@tanstack/react-table'
+import { DataTable } from '@/components/ui/data-table'
+import { Button } from '@/components/ui/button'
+import { configApi } from '@/services/api'
+import { useConfigStore } from '@/stores/configStore'
+import { ServiceGroup, ColumnFilter } from '@/types/api'
+import { Eye, MoreHorizontal } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { DetailModal } from '@/components/modals/DetailModal'
+
 export function ServiceGroupsTable() {
+  const { selectedConfig, updateStat } = useConfigStore()
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
+  const [filters] = useState<ColumnFilter[]>([])
+  const [detailItem, setDetailItem] = useState<ServiceGroup | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['service-groups', selectedConfig?.name, pagination, filters],
+    queryFn: async () => {
+      if (!selectedConfig) return null
+      const response = await configApi.getServiceGroups(
+        selectedConfig.name,
+        pagination.pageIndex + 1,
+        pagination.pageSize,
+        filters
+      )
+      updateStat('service-groups', response.total_items)
+      return response
+    },
+    enabled: !!selectedConfig,
+  })
+
+  const columns: ColumnDef<ServiceGroup>[] = [
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue('name')}</div>
+      ),
+    },
+    {
+      accessorKey: 'member_count',
+      header: 'Count',
+      cell: ({ row }) => {
+        const group = row.original
+        const count = group.members?.length || 0
+        return (
+          <div className="text-center">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              count > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+            }`}>
+              {count}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'members',
+      header: 'Members',
+      cell: ({ row }) => {
+        const group = row.original
+        const members = group.members || []
+        return (
+          <div className="max-w-xs">
+            {members.length > 0 ? (
+              <div className="space-y-1">
+                <div className="text-sm">
+                  {members.slice(0, 3).join(', ')}
+                  {members.length > 3 && (
+                    <span className="text-gray-500"> +{members.length - 3} more</span>
+                  )}
+                </div>
+                {members.length > 3 && (
+                  <div className="text-xs text-gray-400">
+                    Total: {members.length} services
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-400 text-sm italic">No members</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'location',
+      header: 'Location',
+      cell: ({ row }) => {
+        const group = row.original
+        const location = group['parent-device-group'] || 
+                        group['parent-template'] || 
+                        group['parent-vsys'] || 
+                        'Shared'
+        return <span className="text-sm">{location}</span>
+      },
+    },
+    {
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => {
+        const description = row.getValue('description') as string
+        return description ? (
+          <span className="text-gray-600 text-sm">{description}</span>
+        ) : (
+          <span className="text-gray-400 text-sm italic">No description</span>
+        )
+      },
+    },
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => {
+        const group = row.original
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setDetailItem(group)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View details
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Service Groups</h2>
-        <p className="text-muted-foreground">
-          Manage grouped network services and configurations
-        </p>
-      </div>
-      
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Coming Soon</h3>
-          <p className="text-gray-500">This feature is currently under development</p>
+    <>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Service Groups</h2>
+          <p className="text-muted-foreground">
+            Manage grouped network services and configurations
+          </p>
         </div>
+        
+        <DataTable
+          columns={columns}
+          data={data?.items || []}
+          pageCount={data?.total_pages}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          loading={isLoading}
+        />
       </div>
-    </div>
+
+      {detailItem && (
+        <DetailModal
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+        />
+      )}
+    </>
   )
 }

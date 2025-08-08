@@ -6,34 +6,60 @@ export interface Config {
 }
 
 export interface Address {
+  xpath: string
+  'parent-device-group': string | null
+  'parent-template': string | null
+  'parent-vsys': string | null
   name: string
   type: 'ip-netmask' | 'fqdn' | 'ip-range'
-  value: string
-  location: string
+  'ip-netmask': string | null
+  'ip-range': string | null
+  fqdn: string | null
   description?: string
+  tag: string[]
 }
 
 export interface AddressGroup {
+  xpath: string
+  'parent-device-group': string | null
+  'parent-template': string | null
+  'parent-vsys': string | null
   name: string
-  type: string
-  members: string[]
-  location: string
+  static: string[] | null
+  dynamic: any | null
   description?: string
+  tag: string[]
 }
 
 export interface Service {
+  xpath: string
+  'parent-device-group': string | null
+  'parent-template': string | null
+  'parent-vsys': string | null
   name: string
-  protocol: string
-  port: string
-  location: string
+  protocol: {
+    tcp?: {
+      port: string
+      override: boolean
+    } | null
+    udp?: {
+      port: string
+      override: boolean
+    } | null
+  }
   description?: string
+  tag: string[]
 }
 
 export interface ServiceGroup {
+  xpath: string | null
+  'parent-device-group': string | null
+  'parent-template': string | null
+  'parent-vsys': string | null
   name: string
   members: string[]
-  location: string
   description?: string
+  tag: string[]
 }
 
 export interface SecurityPolicy {
@@ -53,23 +79,33 @@ export interface SecurityPolicy {
 }
 
 export interface DeviceGroup {
+  xpath: string
+  'parent-device-group': string | null
+  'parent-template': string | null
+  'parent-vsys': string | null
   name: string
-  parent?: string
-  devices: string[]
-  addresses: number
-  services: number
-  policies: {
-    pre_rules: number
-    post_rules: number
-  }
   description?: string
+  'parent-dg': string | null
+  devices_count: number
+  address_count: number
+  'address-group-count': number
+  service_count: number
+  'service-group-count': number
+  'pre-security-rules-count': number
+  'post-security-rules-count': number
+  'pre-nat-rules-count': number
+  'post-nat-rules-count': number
 }
 
 export interface Template {
+  xpath: string | null
+  'parent-device-group': string | null
+  'parent-template': string | null
+  'parent-vsys': string | null
   name: string
-  devices: string[]
-  variables: Record<string, any>
   description?: string
+  settings: Record<string, any>
+  config: Record<string, any>
 }
 
 export interface SecurityProfile {
@@ -82,10 +118,12 @@ export interface SecurityProfile {
 
 export interface PaginatedResponse<T> {
   items: T[]
-  total: number
+  total_items: number
   page: number
   page_size: number
   total_pages: number
+  has_next: boolean
+  has_previous: boolean
 }
 
 export interface ApiStats {
