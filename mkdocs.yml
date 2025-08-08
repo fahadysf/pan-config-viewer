@@ -1,7 +1,7 @@
 site_name: PAN Config Viewer API Documentation
 site_description: Comprehensive API documentation for PAN-OS Panorama Configuration Viewer
 site_author: Fahad Yousuf
-site_url: https://pan-config-viewer.readthedocs.io
+site_url: https://fahadysf.github.io/pan-config-viewer
 repo_url: https://github.com/fahadysf/pan-config-viewer
 repo_name: fahadysf/pan-config-viewer
 edit_uri: edit/main/docs/

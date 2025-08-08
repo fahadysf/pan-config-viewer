@@ -1,0 +1,42 @@
+name: MkDocs CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/mkdocs.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install mkdocs mkdocs-material pymdown-extensions
+          pip install -r docs/requirements.txt || true
+      
+      - name: Build documentation
+        run: mkdocs build --strict --verbose
+      
+      - name: Check for broken links
+        run: |
+          pip install linkchecker
+          mkdocs serve --dev-addr 127.0.0.1:8000 &
+          SERVER_PID=$!
+          sleep 5
+          linkchecker http://127.0.0.1:8000 \
+            --ignore-url=^mailto: \
+            --ignore-url=^https://github.com/.*/edit/ \
+            --check-extern || true
+          kill $SERVER_PID
