@@ -1,16 +1,20 @@
 # PAN Config Viewer API Documentation
 
-<div align="center">
+<div align="center" markdown="1">
 
-[API Version](https://img.shields.io/badge/API-v1.0.0-blue)(https://github.com/fahadysf/pan-config-viewer)
-[Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)(https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
-[License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)(https://opensource.org/licenses/Apache-2.0)
+[![API Version](https://img.shields.io/badge/API-v1.0.0-blue)](https://github.com/fahadysf/pan-config-viewer)
+[![Documentation Status](https://readthedocs.org/projects/pan-config-viewer/badge/?version=latest)](https://pan-config-viewer.readthedocs.io/en/latest/?badge=latest)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **A powerful REST API for querying and analyzing PAN-OS Panorama configurations**
 
-[Get Started](quickstart/index.md){ .md-button .md-button--primary }
-[Filtering Guide](guides/filtering/index.md){ .md-button }
-[View on GitHub](https://github.com/fahadysf/pan-config-viewer){ .md-button }
+</div>
+
+<div align="center" markdown="1">
+
+[Get Started :material-rocket-launch:](quickstart/index.md){ .md-button .md-button--primary }
+[Filtering Guide :material-filter:](guides/filtering/index.md){ .md-button }
+[View on GitHub :material-github:](https://github.com/fahadysf/pan-config-viewer){ .md-button }
 
 </div>
 
@@ -158,3 +162,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](https:
 <div align="center">
 Made with ❤️ by the PAN Config Team
 </div>
+
