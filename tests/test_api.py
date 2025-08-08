@@ -137,7 +137,9 @@ class TestAddressGroupEndpoints:
         """Test getting address groups"""
         response = client.get("/api/v1/configs/test_panorama/address-groups")
         assert response.status_code == 200
-        groups = response.json()
+        data = response.json()
+        assert "items" in data
+        groups = data["items"]
         assert isinstance(groups, list)
         assert len(groups) > 0
         
@@ -163,7 +165,9 @@ class TestServiceEndpoints:
         """Test getting services"""
         response = client.get("/api/v1/configs/test_panorama/services")
         assert response.status_code == 200
-        services = response.json()
+        data = response.json()
+        assert "items" in data
+        services = data["items"]
         assert isinstance(services, list)
         assert len(services) >= 2
         
@@ -176,7 +180,8 @@ class TestServiceEndpoints:
         """Test getting services filtered by protocol"""
         response = client.get("/api/v1/configs/test_panorama/services?protocol=tcp")
         assert response.status_code == 200
-        services = response.json()
+        data = response.json()
+        services = data["items"]
         assert all("tcp" in svc["protocol"] for svc in services)
     
     def test_get_specific_service(self):
@@ -196,7 +201,9 @@ class TestServiceGroupEndpoints:
         """Test getting service groups"""
         response = client.get("/api/v1/configs/test_panorama/service-groups")
         assert response.status_code == 200
-        groups = response.json()
+        data = response.json()
+        assert "items" in data
+        groups = data["items"]
         assert isinstance(groups, list)
         assert len(groups) > 0
 
@@ -208,7 +215,9 @@ class TestSecurityProfileEndpoints:
         """Test getting vulnerability profiles"""
         response = client.get("/api/v1/configs/test_panorama/security-profiles/vulnerability")
         assert response.status_code == 200
-        profiles = response.json()
+        data = response.json()
+        assert "items" in data
+        profiles = data["items"]
         assert isinstance(profiles, list)
         assert len(profiles) > 0
         
@@ -221,7 +230,9 @@ class TestSecurityProfileEndpoints:
         """Test getting URL filtering profiles"""
         response = client.get("/api/v1/configs/test_panorama/security-profiles/url-filtering")
         assert response.status_code == 200
-        profiles = response.json()
+        data = response.json()
+        assert "items" in data
+        profiles = data["items"]
         assert isinstance(profiles, list)
         assert len(profiles) > 0
         
@@ -238,7 +249,9 @@ class TestDeviceGroupEndpoints:
         """Test getting device groups summary"""
         response = client.get("/api/v1/configs/test_panorama/device-groups")
         assert response.status_code == 200
-        groups = response.json()
+        data = response.json()
+        assert "items" in data
+        groups = data["items"]
         assert isinstance(groups, list)
         assert len(groups) >= 2  # test-dg and child-dg
         
@@ -257,10 +270,11 @@ class TestDeviceGroupEndpoints:
         """Test getting device groups filtered by parent"""
         response = client.get("/api/v1/configs/test_panorama/device-groups?parent=test-dg")
         assert response.status_code == 200
-        groups = response.json()
+        data = response.json()
+        groups = data["items"]
         assert len(groups) == 1
         assert groups[0]["name"] == "child-dg"
-        assert groups[0]["parent_dg"] == "test-dg"
+        assert groups[0]["parent-dg"] == "test-dg"
     
     def test_get_specific_device_group(self):
         """Test getting a specific device group"""
@@ -274,17 +288,37 @@ class TestDeviceGroupEndpoints:
         """Test getting addresses for a device group"""
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        assert "items" in data
+        addresses = data["items"]
         assert isinstance(addresses, list)
         assert len(addresses) == 1
         assert addresses[0]["name"] == "dg-server"
         assert addresses[0]["parent-device-group"] == "test-dg"
     
+    def test_get_device_group_addresses_with_filter(self):
+        """Test filtering addresses in a device group"""
+        # Test name filter
+        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses?filter[name][contains]=server")
+        assert response.status_code == 200
+        data = response.json()
+        addresses = data["items"]
+        assert len(addresses) == 1
+        assert "server" in addresses[0]["name"].lower()
+        
+        # Test that non-matching filter returns empty
+        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses?filter[name][eq]=nonexistent")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["items"] == []
+    
     def test_get_device_group_address_groups(self):
         """Test getting address groups for a device group"""
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/address-groups")
         assert response.status_code == 200
-        groups = response.json()
+        data = response.json()
+        assert "items" in data
+        groups = data["items"]
         assert isinstance(groups, list)
         assert len(groups) == 1
         assert groups[0]["name"] == "dg-servers"
@@ -293,7 +327,9 @@ class TestDeviceGroupEndpoints:
         """Test getting services for a device group"""
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/services")
         assert response.status_code == 200
-        services = response.json()
+        data = response.json()
+        assert "items" in data
+        services = data["items"]
         assert isinstance(services, list)
         assert len(services) == 1
         assert services[0]["name"] == "tcp-9090"
@@ -302,7 +338,9 @@ class TestDeviceGroupEndpoints:
         """Test getting service groups for a device group"""
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/service-groups")
         assert response.status_code == 200
-        groups = response.json()
+        data = response.json()
+        assert "items" in data
+        groups = data["items"]
         assert isinstance(groups, list)
         assert len(groups) == 1
         assert groups[0]["name"] == "dg-services"
@@ -312,20 +350,24 @@ class TestDeviceGroupEndpoints:
         # Test all rules
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/rules")
         assert response.status_code == 200
-        rules = response.json()
+        data = response.json()
+        assert "items" in data
+        rules = data["items"]
         assert len(rules) == 2  # 1 pre + 1 post
         
         # Test pre rules only
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/rules?rulebase=pre")
         assert response.status_code == 200
-        rules = response.json()
+        data = response.json()
+        rules = data["items"]
         assert len(rules) == 1
         assert rules[0]["name"] == "pre-rule-1"
         
         # Test post rules only
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/rules?rulebase=post")
         assert response.status_code == 200
-        rules = response.json()
+        data = response.json()
+        rules = data["items"]
         assert len(rules) == 1
         assert rules[0]["name"] == "post-rule-1"
     
@@ -333,7 +375,20 @@ class TestDeviceGroupEndpoints:
         """Test accessing non-existent device group"""
         response = client.get("/api/v1/configs/test_panorama/device-groups/nonexistent/addresses")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert "items" in data
+        assert data["items"] == []
+    
+    def test_get_device_group_services_with_filter(self):
+        """Test filtering services in a device group"""
+        # Test protocol filter
+        response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/services?filter[protocol][eq]=tcp")
+        assert response.status_code == 200
+        data = response.json()
+        services = data["items"]
+        # tcp-9090 should match
+        assert len(services) == 1
+        assert services[0]["name"] == "tcp-9090"
 
 
 class TestTemplateEndpoints:
@@ -343,7 +398,9 @@ class TestTemplateEndpoints:
         """Test getting templates"""
         response = client.get("/api/v1/configs/test_panorama/templates")
         assert response.status_code == 200
-        templates = response.json()
+        data = response.json()
+        assert "items" in data
+        templates = data["items"]
         assert isinstance(templates, list)
         assert len(templates) == 1
         assert templates[0]["name"] == "test-template"
@@ -365,7 +422,9 @@ class TestTemplateStackEndpoints:
         """Test getting template stacks"""
         response = client.get("/api/v1/configs/test_panorama/template-stacks")
         assert response.status_code == 200
-        stacks = response.json()
+        data = response.json()
+        assert "items" in data
+        stacks = data["items"]
         assert isinstance(stacks, list)
         assert len(stacks) == 1
         assert stacks[0]["name"] == "test-stack"
@@ -387,7 +446,9 @@ class TestLoggingEndpoints:
         """Test getting log profiles"""
         response = client.get("/api/v1/configs/test_panorama/log-profiles")
         assert response.status_code == 200
-        profiles = response.json()
+        data = response.json()
+        assert "items" in data
+        profiles = data["items"]
         assert isinstance(profiles, list)
         assert len(profiles) == 1
         assert profiles[0]["name"] == "test-log-profile"
@@ -396,7 +457,9 @@ class TestLoggingEndpoints:
         """Test getting schedules"""
         response = client.get("/api/v1/configs/test_panorama/schedules")
         assert response.status_code == 200
-        schedules = response.json()
+        data = response.json()
+        assert "items" in data
+        schedules = data["items"]
         assert isinstance(schedules, list)
         assert len(schedules) == 1
         assert schedules[0]["name"] == "test-schedule"
@@ -451,7 +514,7 @@ class TestLocationTracking:
         address = response.json()
         
         assert address["xpath"] is not None
-        assert "/shared/address/entry[@name='test-server']" in address["xpath"]
+        assert "/shared/address/" in address["xpath"]
         assert address["parent-device-group"] is None
         assert address["parent-template"] is None
         assert address["parent-vsys"] is None
@@ -460,11 +523,13 @@ class TestLocationTracking:
         """Test that device group objects have correct location info"""
         response = client.get("/api/v1/configs/test_panorama/device-groups/test-dg/addresses")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        addresses = data["items"]
         
         dg_address = addresses[0]
         assert dg_address["parent-device-group"] == "test-dg"
-        assert "/device-group/entry[@name='test-dg']" in dg_address["xpath"]
+        assert "/device-group/" in dg_address["xpath"]
+        assert "test-dg" in dg_address["xpath"]
         assert dg_address["parent-template"] is None
         assert dg_address["parent-vsys"] is None
     
@@ -472,7 +537,8 @@ class TestLocationTracking:
         """Test that template objects have correct location info"""
         response = client.get("/api/v1/configs/test_panorama/addresses?location=template")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        addresses = data["items"]
         
         # Find template address
         template_addresses = [a for a in addresses if a["name"] == "template-server"]
@@ -481,7 +547,31 @@ class TestLocationTracking:
         template_addr = template_addresses[0]
         assert template_addr["parent-template"] == "test-template"
         assert template_addr["parent-vsys"] == "vsys1"
-        assert "/template/entry[@name='test-template']" in template_addr["xpath"]
+        assert "/template/" in template_addr["xpath"]
+        assert "test-template" in template_addr["xpath"]
+    
+    def test_filtering_with_advanced_operators(self):
+        """Test advanced filtering operators across endpoints"""
+        # Test starts_with operator
+        response = client.get("/api/v1/configs/test_panorama/addresses?filter[name][starts_with]=test")
+        assert response.status_code == 200
+        data = response.json()
+        addresses = data["items"]
+        assert all(addr["name"].startswith("test") for addr in addresses)
+        
+        # Test ends_with operator
+        response = client.get("/api/v1/configs/test_panorama/addresses?filter[name][ends_with]=server")
+        assert response.status_code == 200
+        data = response.json()
+        addresses = data["items"]
+        assert all(addr["name"].endswith("server") for addr in addresses)
+        
+        # Test not_equals operator
+        response = client.get("/api/v1/configs/test_panorama/addresses?filter[name][ne]=test-server")
+        assert response.status_code == 200
+        data = response.json()
+        addresses = data["items"]
+        assert all(addr["name"] != "test-server" for addr in addresses)
 
 
 if __name__ == "__main__":

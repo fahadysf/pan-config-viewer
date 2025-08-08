@@ -17,6 +17,14 @@ The API supports two filtering approaches:
 
 All filters use AND logic - objects must match ALL specified filter conditions.
 
+**Important**: Filtering is available on ALL endpoints that return lists of objects, including:
+- Shared objects endpoints (e.g., `/addresses`, `/services`)
+- Device-group specific endpoints (e.g., `/device-groups/{name}/addresses`)
+- Template specific endpoints (e.g., `/templates/{name}/addresses`)
+- All other collection endpoints
+
+The same filtering syntax and operators work consistently across all endpoints.
+
 ## Filter Syntax
 
 ### Basic Query Parameters
@@ -222,6 +230,21 @@ GET /api/v1/configs/panorama/rules/security?filter[source_in]=any&filter[destina
 
 # Find NAT rules for specific subnet with source translation
 GET /api/v1/configs/panorama/rules/nat?filter[source_starts_with]=192.168.&filter[source_translation_exists]=true
+```
+
+### Device-Group Specific Filtering
+
+The same filtering capabilities work for device-group specific endpoints:
+
+```bash
+# Find servers in a specific device group
+GET /api/v1/configs/panorama/device-groups/DMZ-DG/addresses?filter[name_contains]=server
+
+# Filter services by protocol in a device group
+GET /api/v1/configs/panorama/device-groups/Branch-DG/services?filter[protocol_equals]=tcp&filter[port_gte]=8000
+
+# Find security rules with specific tags in a device group
+GET /api/v1/configs/panorama/device-groups/HQ-DG/rules?filter[tag_contains]=critical&filter[action_equals]=allow
 ```
 
 ## Performance Considerations
