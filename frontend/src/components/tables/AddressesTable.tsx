@@ -14,12 +14,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FilterableColumnHeader } from '@/components/ui/filterable-column-header'
 import { DetailModal } from '@/components/modals/DetailModal'
 
 export function AddressesTable() {
   const { selectedConfig, updateStat } = useConfigStore()
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
-  const [filters] = useState<ColumnFilter[]>([])
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
+  const [filters, setFilters] = useState<ColumnFilter[]>([])
   const [detailItem, setDetailItem] = useState<Address | null>(null)
 
   const { data, isLoading } = useQuery({
@@ -41,14 +42,34 @@ export function AddressesTable() {
   const columns: ColumnDef<Address>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Name"
+          field="name"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue('name')}</div>
       ),
     },
     {
       accessorKey: 'type',
-      header: 'Type',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Type"
+          field="type"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
+            { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {row.getValue('type')}
@@ -57,7 +78,21 @@ export function AddressesTable() {
     },
     {
       accessorKey: 'value',
-      header: 'Value',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Value"
+          field="ip-netmask,ip-range,fqdn"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
+            { value: 'starts_with', label: 'Starts with', requiresValue: true, applicableTypes: ['text'] },
+            { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
+            { value: 'regex', label: 'Regex', requiresValue: true, applicableTypes: ['text'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => {
         const address = row.original
         let value = 'N/A'
@@ -110,7 +145,15 @@ export function AddressesTable() {
     },
     {
       accessorKey: 'location',
-      header: 'Location',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Location"
+          field="parent-device-group,parent-template,parent-vsys"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const address = row.original
         const location = address['parent-device-group'] || 
@@ -122,7 +165,15 @@ export function AddressesTable() {
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Description"
+          field="description"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const description = row.getValue('description') as string
         return description ? (

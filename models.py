@@ -78,22 +78,37 @@ class AddressObject(ConfigLocation):
     
     @model_validator(mode='after')
     def validate_address_type(self):
-        """Ensure only the value matching the type is populated and others are null"""
+        """Determine the address type based on which field has a value"""
+        # Check which field has an actual value (not None and not empty string)
+        has_ip_netmask = self.ip_netmask is not None and self.ip_netmask.strip() != ""
+        has_ip_range = self.ip_range is not None and self.ip_range.strip() != ""
+        has_fqdn = self.fqdn is not None and self.fqdn.strip() != ""
+        
         # Determine the type based on which field is populated
-        if self.ip_netmask is not None:
+        if has_ip_netmask:
             self.type = AddressType.IP_NETMASK
-            self.ip_range = None
-            self.fqdn = None
-        elif self.ip_range is not None:
+            # Set other fields to None for cleanliness
+            if not has_ip_range:
+                self.ip_range = None
+            if not has_fqdn:
+                self.fqdn = None
+        elif has_ip_range:
             self.type = AddressType.IP_RANGE
-            self.ip_netmask = None
-            self.fqdn = None
-        elif self.fqdn is not None:
+            # Set other fields to None for cleanliness
+            if not has_ip_netmask:
+                self.ip_netmask = None
+            if not has_fqdn:
+                self.fqdn = None
+        elif has_fqdn:
             self.type = AddressType.FQDN
-            self.ip_netmask = None
-            self.ip_range = None
+            # Set other fields to None for cleanliness
+            if not has_ip_netmask:
+                self.ip_netmask = None
+            if not has_ip_range:
+                self.ip_range = None
         else:
-            # If type is specified but no corresponding value, ensure consistency
+            # If type is explicitly specified but no corresponding value, 
+            # keep it as is but clean up unused fields
             if self.type == AddressType.IP_NETMASK:
                 self.ip_range = None
                 self.fqdn = None

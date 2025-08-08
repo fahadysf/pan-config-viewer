@@ -136,11 +136,16 @@ class PanoramaXMLParser:
             if not name:
                 continue
             
+            # Only set the field that actually has a value, leave others as None
+            ip_netmask_elem = entry.find("ip-netmask")
+            ip_range_elem = entry.find("ip-range")  
+            fqdn_elem = entry.find("fqdn")
+            
             address_dict = {
                 "name": name,
-                "ip_netmask": self._get_text(entry.find("ip-netmask")),
-                "ip_range": self._get_text(entry.find("ip-range")),
-                "fqdn": self._get_text(entry.find("fqdn")),
+                "ip_netmask": self._get_text(ip_netmask_elem) if ip_netmask_elem is not None and ip_netmask_elem.text else None,
+                "ip_range": self._get_text(ip_range_elem) if ip_range_elem is not None and ip_range_elem.text else None,
+                "fqdn": self._get_text(fqdn_elem) if fqdn_elem is not None and fqdn_elem.text else None,
                 "description": self._get_text(entry.find("description")),
                 "tag": self._get_list_from_members(entry.find("tag"))
             }

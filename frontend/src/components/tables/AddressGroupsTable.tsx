@@ -14,12 +14,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FilterableColumnHeader } from '@/components/ui/filterable-column-header'
 import { DetailModal } from '@/components/modals/DetailModal'
 
 export function AddressGroupsTable() {
   const { selectedConfig, updateStat } = useConfigStore()
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
-  const [filters] = useState<ColumnFilter[]>([])
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
+  const [filters, setFilters] = useState<ColumnFilter[]>([])
   const [detailItem, setDetailItem] = useState<AddressGroup | null>(null)
 
   const { data, isLoading } = useQuery({
@@ -41,14 +42,34 @@ export function AddressGroupsTable() {
   const columns: ColumnDef<AddressGroup>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Name"
+          field="name"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue('name')}</div>
       ),
     },
     {
       accessorKey: 'type',
-      header: 'Type',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Type"
+          field="static,dynamic"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
+            { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const hasStaticMembers = group.static && group.static.length > 0
@@ -77,7 +98,19 @@ export function AddressGroupsTable() {
     },
     {
       accessorKey: 'members',
-      header: 'Members/Filter',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Members/Filter"
+          field="static"
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOperators={[
+            { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
+            { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
+          ]}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const staticMembers = group.static || []
@@ -111,7 +144,15 @@ export function AddressGroupsTable() {
     },
     {
       accessorKey: 'location',
-      header: 'Location',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Location"
+          field="parent-device-group,parent-template,parent-vsys"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const group = row.original
         const location = group['parent-device-group'] || 
@@ -123,7 +164,15 @@ export function AddressGroupsTable() {
     },
     {
       accessorKey: 'description',
-      header: 'Description',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Description"
+          field="description"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      ),
       cell: ({ row }) => {
         const description = row.getValue('description') as string
         return description ? (

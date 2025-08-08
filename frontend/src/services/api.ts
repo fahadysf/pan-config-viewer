@@ -64,7 +64,8 @@ const buildFilterParams = (filters: ColumnFilter[]): Record<string, string> => {
     } else if (filter.operator === 'is_not_empty') {
       params['is_not_null'] = 'true'
     } else {
-      params[`filter[${filter.field}][${filter.operator}]`] = filter.value
+      // Use dot notation format: filter.field.operator=value
+      params[`filter.${filter.field}.${filter.operator}`] = filter.value
     }
   })
   return params

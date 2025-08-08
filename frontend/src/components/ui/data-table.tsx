@@ -26,8 +26,16 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ChevronDown, Settings2 } from "lucide-react"
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200]
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -53,7 +61,6 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [globalFilter, setGlobalFilter] = React.useState("")
 
   const table = useReactTable({
     data,
@@ -64,14 +71,12 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
-      globalFilter,
       pagination,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: (updater) => {
       if (typeof updater === 'function' && pagination) {
         const newPagination = updater(pagination)
@@ -85,15 +90,18 @@ export function DataTable<TData, TValue>({
     manualPagination: !!pageCount,
   })
 
+  const handlePageSizeChange = (newSize: string) => {
+    if (onPaginationChange && pagination) {
+      onPaginationChange({
+        pageIndex: 0, // Reset to first page when changing page size
+        pageSize: parseInt(newSize),
+      })
+    }
+  }
+
   return (
     <div className="w-full space-y-4">
-      <div className="flex items-center justify-between">
-        <Input
-          placeholder="Search all columns..."
-          value={globalFilter ?? ""}
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          className="max-w-sm"
-        />
+      <div className="flex items-center justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -173,9 +181,33 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <Select
+            value={pagination?.pageSize?.toString() ?? "100"}
+            onValueChange={handlePageSizeChange}
+          >
+            <SelectTrigger className="w-16 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">
+            Showing {((pagination?.pageIndex ?? 0) * (pagination?.pageSize ?? 100)) + 1} to{" "}
+            {Math.min(
+              ((pagination?.pageIndex ?? 0) + 1) * (pagination?.pageSize ?? 100),
+              (pageCount ?? 1) * (pagination?.pageSize ?? 100)
+            )}{" "}
+            of {(pageCount ?? 1) * (pagination?.pageSize ?? 100)} entries
+          </span>
         </div>
         <div className="flex items-center space-x-2">
           <Button
