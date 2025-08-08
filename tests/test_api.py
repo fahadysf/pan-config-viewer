@@ -7,12 +7,20 @@ from typing import Dict, Any
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Set the test config path before importing the app
+os.environ["CONFIG_FILES_PATH"] = os.path.join(os.path.dirname(__file__), "test_configs")
+
 # We need to delay the import until the environment is set by pytest
 from fastapi.testclient import TestClient
 
-# Import app - tests will run with Docker API
+# Import app - tests will run with test configs
 from main import app
+
+# Create a test client that properly triggers startup events
 client = TestClient(app)
+# Trigger the startup event by making an initial request
+with client:
+    _ = client.get("/api/v1/configs")
 
 
 class TestConfigurationEndpoints:
@@ -49,7 +57,11 @@ class TestAddressEndpoints:
         """Test getting all addresses"""
         response = client.get("/api/v1/configs/test_panorama/addresses")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        
+        # Check paginated response structure
+        assert "items" in data
+        addresses = data["items"]
         assert isinstance(addresses, list)
         assert len(addresses) >= 3  # Should have shared and device group addresses
         
@@ -58,12 +70,28 @@ class TestAddressEndpoints:
         assert "test-server" in names
         assert "web-server" in names
         assert "dg-server" in names
+        
+        # Verify type field is populated correctly
+        for addr in addresses:
+            if addr["ip-netmask"]:
+                assert addr["type"] == "ip-netmask"
+                assert addr["ip-range"] is None
+                assert addr["fqdn"] is None
+            elif addr["ip-range"]:
+                assert addr["type"] == "ip-range"
+                assert addr["ip-netmask"] is None
+                assert addr["fqdn"] is None
+            elif addr["fqdn"]:
+                assert addr["type"] == "fqdn"
+                assert addr["ip-netmask"] is None
+                assert addr["ip-range"] is None
     
     def test_get_addresses_with_filter(self):
         """Test getting addresses with name filter"""
         response = client.get("/api/v1/configs/test_panorama/addresses?name=server")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        addresses = data["items"]
         assert all("server" in addr["name"].lower() for addr in addresses)
     
     def test_get_addresses_by_location(self):
@@ -71,13 +99,15 @@ class TestAddressEndpoints:
         # Test shared addresses only
         response = client.get("/api/v1/configs/test_panorama/addresses?location=shared")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        addresses = data["items"]
         assert all(addr["parent-device-group"] is None for addr in addresses)
         
         # Test device-group addresses only
         response = client.get("/api/v1/configs/test_panorama/addresses?location=device-group")
         assert response.status_code == 200
-        addresses = response.json()
+        data = response.json()
+        addresses = data["items"]
         assert all(addr["parent-device-group"] is not None for addr in addresses)
     
     def test_get_specific_address(self):
@@ -87,6 +117,9 @@ class TestAddressEndpoints:
         address = response.json()
         assert address["name"] == "test-server"
         assert address["ip-netmask"] == "10.1.1.100"
+        assert address["type"] == "ip-netmask"
+        assert address["ip-range"] is None
+        assert address["fqdn"] is None
         assert address["description"] == "Test server"
         assert "xpath" in address
         assert address["xpath"] is not None
