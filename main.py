@@ -84,9 +84,74 @@ app = FastAPI(
     
     ## Filtering
     
-    All endpoints support filtering by name using the `name` query parameter.
-    Some endpoints support tag-based filtering using the `tag` parameter.
-    Advanced filtering is available using the `filter[field]` syntax.
+    Most endpoints support comprehensive filtering using two syntaxes:
+    
+    ### 1. Basic Query Parameters
+    Simple filters using standard query parameters:
+    - `name=firewall` - Filter by name (partial match)
+    - `tag=production` - Filter by tag
+    - `location=shared` - Filter by location
+    - `protocol=tcp` - Filter by protocol (for services)
+    
+    ### 2. Advanced Filter Syntax
+    Use `filter[property_operator]=value` for precise filtering.
+    
+    #### Available Operators:
+    - `equals` - Exact match
+    - `not_equals` - Not equal to value
+    - `contains` - Contains substring (default if no operator specified)
+    - `not_contains` - Does not contain substring
+    - `starts_with` - Starts with value
+    - `ends_with` - Ends with value
+    - `in` - Value in list (for array fields)
+    - `not_in` - Value not in list
+    - `gt` - Greater than (numeric comparisons)
+    - `lt` - Less than (numeric comparisons)
+    - `gte` - Greater than or equal
+    - `lte` - Less than or equal
+    - `regex` - Regular expression match
+    - `exists` - Field exists (for optional fields)
+    
+    #### Filter Examples:
+    ```
+    # Name contains "firewall"
+    filter[name_contains]=firewall
+    
+    # IP starts with "10."
+    filter[ip_starts_with]=10.
+    
+    # Port greater than 8000
+    filter[port_gt]=8000
+    
+    # Has "production" tag
+    filter[tag_in]=production
+    
+    # Name matches regex pattern
+    filter[name_regex]=^fw-.*-\\d+$
+    
+    # Multiple filters (AND logic)
+    filter[protocol_equals]=tcp&filter[port_gte]=8000&filter[port_lte]=9000
+    ```
+    
+    ### Object-Specific Filters
+    
+    #### Address Objects:
+    - `name`, `ip`, `ip_netmask`, `ip_range`, `fqdn`, `type`, `tag`, `description`
+    - `parent_device_group`, `parent_template`, `parent_vsys`
+    
+    #### Service Objects:
+    - `name`, `protocol`, `port`, `tag`, `description`
+    - `parent_device_group`, `parent_template`
+    
+    #### Security Rules:
+    - `name`, `uuid`, `source`, `destination`, `source_zone`, `dest_zone`
+    - `application`, `service`, `action`, `disabled`, `source_user`
+    - `category`, `tag`, `device_group`, `rule_type`, `log_start`, `log_end`
+    
+    #### Device Groups:
+    - `name`, `parent`, `parent_dg`, `description`
+    - `devices_count`, `address_count`, `service_count`
+    - `pre_security_rules_count`, `post_security_rules_count`
     
     ## Data Source
     
