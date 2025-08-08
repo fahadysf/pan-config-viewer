@@ -1,0 +1,253 @@
+site_name: PAN Config Viewer API Documentation
+site_description: Comprehensive API documentation for PAN-OS Panorama Configuration Viewer
+site_author: PAN Config Team
+site_url: https://pan-config-viewer.readthedocs.io
+repo_url: https://github.com/yourusername/pan-config-viewer
+repo_name: pan-config-viewer
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  language: en
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.prune
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - search.share
+    - header.autohide
+    - content.tabs.link
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  font:
+    text: Roboto
+    code: Roboto Mono
+  favicon: assets/favicon.png
+  logo: assets/logo.png
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+plugins:
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+      lang:
+        - en
+  - minify:
+      minify_html: true
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            show_symbol_type_toc: true
+            show_symbol_type_heading: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: iso_date
+  - tags:
+      tags_file: tags.md
+  - social:
+      cards_layout_options:
+        background_color: "#1e2129"
+        color: "#ffffff"
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: yourusername
+      repo: pan-config-viewer
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/pan-config-viewer
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/yourusername/pan-config-viewer
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+  version:
+    provider: mike
+    default: stable
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
+
+nav:
+  - Home:
+    - index.md
+    - getting-started.md
+    - installation.md
+    - configuration.md
+  
+  - Quick Start:
+    - quickstart/index.md
+    - quickstart/basic-usage.md
+    - quickstart/authentication.md
+    - quickstart/first-requests.md
+  
+  - API Guide:
+    - api/index.md
+    - api/overview.md
+    - api/authentication.md
+    - api/pagination.md
+    - api/error-handling.md
+    
+  - Filtering:
+    - guides/filtering/index.md
+    - guides/filtering/operators.md
+    - guides/filtering/syntax.md
+    - guides/filtering/advanced.md
+    - guides/filtering/performance.md
+    
+  - Endpoints:
+    - api/endpoints/index.md
+    - Address Objects:
+      - api/endpoints/addresses.md
+      - api/endpoints/address-groups.md
+    - Service Objects:
+      - api/endpoints/services.md
+      - api/endpoints/service-groups.md
+    - Security Policies:
+      - api/endpoints/security-rules.md
+      - api/endpoints/nat-rules.md
+    - Device Management:
+      - api/endpoints/device-groups.md
+      - api/endpoints/templates.md
+      - api/endpoints/template-stacks.md
+    - Security Profiles:
+      - api/endpoints/security-profiles.md
+      - api/endpoints/log-profiles.md
+    - Other Objects:
+      - api/endpoints/schedules.md
+      - api/endpoints/tags.md
+      - api/endpoints/zones.md
+      - api/endpoints/applications.md
+  
+  - Object Reference:
+    - api/objects/index.md
+    - api/objects/address.md
+    - api/objects/service.md
+    - api/objects/security-rule.md
+    - api/objects/nat-rule.md
+    - api/objects/device-group.md
+  
+  - Examples:
+    - examples/index.md
+    - examples/basic-queries.md
+    - examples/complex-filters.md
+    - examples/pagination.md
+    - examples/bulk-operations.md
+    - examples/python.md
+    - examples/javascript.md
+    - examples/curl.md
+    - examples/postman.md
+  
+  - Advanced:
+    - guides/performance.md
+    - guides/caching.md
+    - guides/rate-limiting.md
+    - guides/webhooks.md
+    - guides/monitoring.md
+  
+  - Reference:
+    - reference/index.md
+    - reference/api-spec.md
+    - reference/changelog.md
+    - reference/migration.md
+    - reference/troubleshooting.md
+    - reference/faq.md
+  
+  - Developer:
+    - developer/contributing.md
+    - developer/architecture.md
+    - developer/testing.md
+    - developer/deployment.md
