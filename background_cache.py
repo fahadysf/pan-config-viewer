@@ -11,8 +11,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 import traceback
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class CacheStatus(Enum):
     NOT_STARTED = "not_started"
@@ -309,6 +310,10 @@ class BackgroundCacheManager:
             if not data:
                 return None
             
+            # Debug logging
+            if filters.get('advanced'):
+                logger.debug(f"Advanced filters received: {filters.get('advanced')}")
+            
             # Apply filters efficiently using list comprehension
             filtered_items = data
             
@@ -337,8 +342,73 @@ class BackgroundCacheManager:
                 filtered_items = [item for item in filtered_items 
                                  if item.get('tag') and tag in item.get('tag')]
             
-            # Advanced filters would be applied here if needed
-            # For now, skip complex filtering to maintain performance
+            # Apply advanced filters if present
+            advanced_filters = filters.get('advanced', {})
+            if advanced_filters:
+                # Convert cached data to proper model objects for filtering
+                if obj_type == 'addresses':
+                    from models import AddressObject
+                    from filtering import apply_filters, ADDRESS_FILTERS
+                    
+                    # Convert cached dictionaries to AddressObject instances
+                    address_objects = []
+                    logger.debug(f"Reconstructing {len(filtered_items)} items to AddressObject")
+                    for item in filtered_items:
+                        try:
+                            # Create AddressObject from cached data
+                            addr_data = {
+                                'name': item.get('name'),
+                                'description': item.get('description'),
+                                'tag': item.get('tag'),
+                                'xpath': item.get('xpath'),
+                                'parent_device_group': item.get('parent-device-group'),
+                                'parent_template': item.get('parent-template'),
+                                'parent_vsys': item.get('parent-vsys')
+                            }
+                            
+                            # Add type-specific fields
+                            if item.get('ip-netmask'):
+                                addr_data['ip_netmask'] = item.get('ip-netmask')
+                            if item.get('ip-range'):
+                                addr_data['ip_range'] = item.get('ip-range')
+                            if item.get('fqdn'):
+                                addr_data['fqdn'] = item.get('fqdn')
+                            
+                            addr_obj = AddressObject(**addr_data)
+                            address_objects.append(addr_obj)
+                        except Exception as e:
+                            # Log the error for debugging
+                            logger.error(f"Failed to reconstruct AddressObject for {item.get('name')}: {e}")
+                            continue
+                    
+                    # Apply advanced filters to objects
+                    logger.debug(f"Applying filters to {len(address_objects)} reconstructed objects")
+                    filtered_objects = apply_filters(address_objects, advanced_filters, ADDRESS_FILTERS)
+                    logger.debug(f"Filter result: {len(filtered_objects)} objects matched")
+                    
+                    # Convert back to dictionary format for caching consistency
+                    filtered_items = []
+                    for obj in filtered_objects:
+                        item_dict = {
+                            'name': obj.name,
+                            'description': obj.description,
+                            'tag': obj.tag,
+                            'xpath': obj.xpath,
+                            'parent-device-group': obj.parent_device_group,
+                            'parent-template': obj.parent_template,
+                            'parent-vsys': obj.parent_vsys,
+                            'type': obj.type.value if obj.type else None
+                        }
+                        
+                        # Add type-specific fields
+                        if obj.ip_netmask:
+                            item_dict['ip-netmask'] = obj.ip_netmask
+                        if obj.ip_range:
+                            item_dict['ip-range'] = obj.ip_range
+                        if obj.fqdn:
+                            item_dict['fqdn'] = obj.fqdn
+                            
+                        filtered_items.append(item_dict)
             
             # Apply pagination to filtered results
             total_items = len(filtered_items)

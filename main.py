@@ -22,6 +22,7 @@ from filtering import (
     NAT_RULE_FILTERS, TEMPLATE_FILTERS, TEMPLATE_STACK_FILTERS,
     LOG_PROFILE_FILTERS, SCHEDULE_FILTERS
 )
+from zodb_cache import get_zodb_cache
 
 # Initialize FastAPI app with comprehensive documentation
 app = FastAPI(
@@ -229,13 +230,58 @@ loading_configs: Set[str] = set()
 # Templates removed - using React frontend instead
 
 async def load_and_cache_config(config_name: str) -> None:
-    """Load a configuration and fully cache all its objects synchronously"""
+    """Load a configuration and fully cache all its objects using ZODB for persistence"""
     import time
     start_time = time.time()
     xml_path = os.path.join(CONFIG_FILES_PATH, f"{config_name}.xml")
     
+    # Get ZODB cache instance
+    zodb_cache = get_zodb_cache()
+    
+    # Check if we have valid cached data
+    if zodb_cache.is_cache_valid(config_name, xml_path):
+        print(f"  Loading from ZODB cache...")
+        cached_data = zodb_cache.load_from_cache(config_name)
+        
+        if cached_data:
+            # Restore parser instance
+            parser = PanoramaXMLParser(xml_path)
+            parsers[config_name] = parser
+            
+            # Load cached data into memory cache
+            total_items = 0
+            for obj_type, items in cached_data.items():
+                cache_key = f"{config_name}:{obj_type}"
+                
+                # Convert objects to dictionaries for background cache
+                dict_items = []
+                for item in items:
+                    if hasattr(item, 'dict'):
+                        # Use by_alias=True to get hyphenated field names
+                        dict_items.append(item.dict(by_alias=True))
+                    elif hasattr(item, '__dict__'):
+                        dict_items.append(item.__dict__)
+                    else:
+                        dict_items.append(item)
+                
+                background_cache.cache[cache_key] = {
+                    'items': dict_items,
+                    'timestamp': time.time(),
+                    'data': dict_items  # Add data key for background cache compatibility
+                }
+                item_count = len(items) if items else 0
+                total_items += item_count
+                print(f"  Loaded {obj_type}: {item_count} items")
+            
+            # Mark as ready
+            background_cache.mark_config_ready(config_name)
+            
+            elapsed = time.time() - start_time
+            print(f"  Total: {total_items} items loaded from cache in {elapsed:.2f} seconds")
+            return
+    
+    # No valid cache, parse from XML
     print(f"  Parsing XML file...")
-    # Parse the XML file
     parser = PanoramaXMLParser(xml_path)
     parsers[config_name] = parser
     
@@ -251,7 +297,10 @@ async def load_and_cache_config(config_name: str) -> None:
         ('url_filtering_profiles', 'get_url_filtering_profiles'),
     ]
     
+    # Data to save to ZODB
+    zodb_data = {}
     total_items = 0
+    
     # Cache each object type
     for obj_type, method_name in cache_methods:
         try:
@@ -260,18 +309,26 @@ async def load_and_cache_config(config_name: str) -> None:
                 method = getattr(parser, method_name)
                 items = method()
                 
-                # Store in background cache
+                # Store in memory cache
                 cache_key = f"{config_name}:{obj_type}"
                 background_cache.cache[cache_key] = {
                     'items': items,
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'data': items  # Add data key for background cache compatibility
                 }
+                
+                # Store for ZODB
+                zodb_data[obj_type] = items
                 
                 item_count = len(items) if items else 0
                 total_items += item_count
                 print(f"{item_count} items")
         except Exception as e:
             print(f"Failed: {e}")
+    
+    # Save to ZODB cache
+    print(f"  Saving to ZODB cache...")
+    zodb_cache.save_to_cache(config_name, xml_path, zodb_data)
     
     # Mark this config as fully cached
     background_cache.mark_config_ready(config_name)
@@ -473,6 +530,30 @@ async def list_configs():
         "total_available": len(available_configs)
     }
 
+@app.get("/api/v1/configs/{config_name}/cache-stats",
+         tags=["Configuration"],
+         summary="Get ZODB cache statistics",
+         description="Get cache statistics for a specific configuration file")
+async def get_cache_stats(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)")
+):
+    """Get ZODB cache statistics for a configuration"""
+    zodb_cache = get_zodb_cache()
+    stats = zodb_cache.get_cache_stats(config_name)
+    
+    if not stats:
+        return {"message": f"No ZODB cache found for {config_name}"}
+    
+    # Add human-readable sizes
+    stats['cache_file_size_mb'] = round(stats['cache_file_size'] / (1024 * 1024), 2)
+    
+    # Calculate time since cache was created
+    import time
+    stats['cache_age_minutes'] = round((time.time() - stats['parse_timestamp']) / 60, 2)
+    stats['cache_age_hours'] = round(stats['cache_age_minutes'] / 60, 2)
+    
+    return stats
+
 @app.get("/api/v1/configs/{config_name}/info",
          tags=["Configuration"],
          summary="Get configuration info",
@@ -560,25 +641,25 @@ async def get_addresses(
     # Parse filter parameters to check for advanced filters
     advanced_filters = parse_filter_params(dict(request.query_params))
     
-    # Only use cache if no advanced filters are present
-    if background_cache.is_cached(config_name, 'addresses') and not advanced_filters:
+    # Use cache if available (can handle both simple and advanced filters)
+    if background_cache.is_cached(config_name, 'addresses'):
         # Check if simple filters are being applied
         has_simple_filters = (name or tag or location != "all")
         
-        if not has_simple_filters:
+        if not has_simple_filters and not advanced_filters:
             # No filters - return paginated cached data directly
             cached_data = background_cache.get_cached_data(config_name, 'addresses', page, page_size)
             if cached_data:
                 return cached_data
         else:
-            # Simple filters present - use cached filtering
+            # Simple or advanced filters present - use cached filtering
             filtered_data = background_cache.get_filtered_cached_data(
                 config_name, 'addresses',
                 filters={
                     'location': location,
                     'name': name,
                     'tag': tag,
-                    'advanced': {}  # No advanced filters
+                    'advanced': advanced_filters  # Include advanced filters
                 },
                 page=page,
                 page_size=page_size
