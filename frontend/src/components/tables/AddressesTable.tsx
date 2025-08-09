@@ -5,6 +5,7 @@ import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import { configApi } from '@/services/api'
 import { useConfigStore } from '@/stores/configStore'
+import { useDebouncedFilters } from '@/hooks/useDebouncedFilters'
 import { Address, ColumnFilter } from '@/types/api'
 import { Eye, MoreHorizontal, Loader2 } from 'lucide-react'
 import {
@@ -83,14 +84,23 @@ AddressLocationCell.displayName = 'AddressLocationCell'
 export function AddressesTable() {
   const { selectedConfig, updateStat } = useConfigStore()
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
-  const [filters, setFilters] = useState<ColumnFilter[]>([])
   const [detailItem, setDetailItem] = useState<Address | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   
+  // Use debounced filters
+  const {
+    filters,
+    debouncedFilters,
+    isDebouncing,
+    handleFiltersChange: handleFiltersChangeDebounced,
+    resetFilters
+  } = useDebouncedFilters([], 500) // 500ms debounce
+  
   // Memoize handlers to prevent column recreation
   const handleFiltersChange = useCallback((newFilters: ColumnFilter[]) => {
-    setFilters(newFilters)
-  }, [])
+    setPagination({ pageIndex: 0, pageSize: pagination.pageSize }) // Reset to first page
+    handleFiltersChangeDebounced(newFilters)
+  }, [pagination.pageSize, handleFiltersChangeDebounced])
   
   const handleDetailView = useCallback((item: Address) => {
     setDetailItem(item)
@@ -99,13 +109,13 @@ export function AddressesTable() {
   // Reset pagination and filters when config changes
   useEffect(() => {
     setPagination({ pageIndex: 0, pageSize: 100 })
-    setFilters([])
+    resetFilters()
     setIsInitialLoad(true)
     setDetailItem(null)
-  }, [selectedConfig?.name])
+  }, [selectedConfig?.name, resetFilters])
 
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['addresses', selectedConfig?.name, pagination, filters],
+    queryKey: ['addresses', selectedConfig?.name, pagination, debouncedFilters],
     queryFn: async ({ signal }) => {
       if (!selectedConfig) return null
       
@@ -114,7 +124,7 @@ export function AddressesTable() {
           selectedConfig.name,
           pagination.pageIndex + 1,
           pagination.pageSize,
-          filters
+          debouncedFilters
         )
         
         // Check if request was cancelled
@@ -305,7 +315,7 @@ export function AddressesTable() {
           pageCount={data?.total_pages}
           pagination={pagination}
           onPaginationChange={setPagination}
-          loading={isFetching && !isInitialLoad}
+          loading={isFetching || isDebouncing}
         />
       </div>
 
