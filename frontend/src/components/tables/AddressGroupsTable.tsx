@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/data-table'
@@ -7,6 +7,7 @@ import { configApi } from '@/services/api'
 import { useConfigStore } from '@/stores/configStore'
 import { AddressGroup, ColumnFilter } from '@/types/api'
 import { Eye, MoreHorizontal } from 'lucide-react'
+import { useDebouncedFilters } from '@/hooks/useDebouncedFilters'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,22 +23,46 @@ export function AddressGroupsTable() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
   const [filters, setFilters] = useState<ColumnFilter[]>([])
   const [detailItem, setDetailItem] = useState<AddressGroup | null>(null)
+  const [displayData, setDisplayData] = useState<AddressGroup[]>([])
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [, startTransition] = useTransition()
+  
+  const { debouncedFilters, handleFiltersChange: handleFiltersChangeBase } = useDebouncedFilters(filters)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['address-groups', selectedConfig?.name, pagination, filters],
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['address-groups', selectedConfig?.name, pagination, debouncedFilters],
     queryFn: async () => {
       if (!selectedConfig) return null
       const response = await configApi.getAddressGroups(
         selectedConfig.name,
         pagination.pageIndex + 1,
         pagination.pageSize,
-        filters
+        debouncedFilters
       )
       updateStat('address-groups', response.total_items)
       return response
     },
     enabled: !!selectedConfig,
   })
+
+  // Update display data when query data changes
+  useEffect(() => {
+    if (data?.items) {
+      startTransition(() => {
+        setDisplayData(data.items)
+        setIsTransitioning(false)
+      })
+    }
+  }, [data])
+
+  // Handle filter changes with immediate UI feedback
+  const handleFiltersChange = useCallback((newFilters: ColumnFilter[]) => {
+    setIsTransitioning(true)
+    setDisplayData([]) // Immediately clear data
+    setPagination({ pageIndex: 0, pageSize: pagination.pageSize })
+    setFilters(newFilters)
+    handleFiltersChangeBase(newFilters)
+  }, [pagination.pageSize, handleFiltersChangeBase])
 
   const columns: ColumnDef<AddressGroup>[] = [
     {
@@ -48,7 +73,7 @@ export function AddressGroupsTable() {
           title="Name"
           field="name"
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
         />
       ),
       cell: ({ row }) => (
@@ -63,7 +88,7 @@ export function AddressGroupsTable() {
           title="Type"
           field="static,dynamic"
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           filterOperators={[
             { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
             { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
@@ -104,7 +129,7 @@ export function AddressGroupsTable() {
           title="Members/Filter"
           field="static"
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           filterOperators={[
             { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
             { value: 'eq', label: 'Equals', requiresValue: true, applicableTypes: ['text', 'number'] },
@@ -150,7 +175,7 @@ export function AddressGroupsTable() {
           title="Location"
           field="parent-device-group,parent-template,parent-vsys"
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
         />
       ),
       cell: ({ row }) => {
@@ -170,7 +195,7 @@ export function AddressGroupsTable() {
           title="Description"
           field="description"
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
         />
       ),
       cell: ({ row }) => {
@@ -221,11 +246,11 @@ export function AddressGroupsTable() {
         
         <DataTable
           columns={columns}
-          data={data?.items || []}
+          data={displayData}
           pageCount={data?.total_pages}
           pagination={pagination}
           onPaginationChange={setPagination}
-          loading={isLoading}
+          loading={isLoading || isTransitioning || isFetching}
         />
       </div>
 
