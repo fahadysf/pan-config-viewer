@@ -151,19 +151,23 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {loading || data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-64 text-center">
-                  <div className="flex flex-col items-center justify-center space-y-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Loading data...</p>
-                      <p className="text-xs text-gray-500 mt-1">Applying filters and fetching results</p>
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Loading data...</p>
+                        <p className="text-xs text-gray-500 mt-1">Applying filters and fetching results</p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-gray-500">No results found</div>
+                  )}
                 </TableCell>
               </TableRow>
-            ) : table.getRowModel().rows?.length ? (
+            ) : (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -176,12 +180,6 @@ export function DataTable<TData, TValue>({
                   ))}
                 </TableRow>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>

@@ -19,6 +19,18 @@ class PanoramaXMLParser:
         self.root = None
         self.is_panorama = False
         self.is_firewall = False
+        # Cache for parsed objects to improve performance
+        self._cache = {
+            'all_addresses': None,
+            'shared_addresses': None,
+            'device_group_addresses': {},
+            'all_services': None,
+            'shared_services': None,
+            'device_group_services': {},
+            'address_groups': None,
+            'service_groups': None,
+            'device_group_summaries': None
+        }
         self._load_xml()
         self._detect_config_type()
     
@@ -160,6 +172,10 @@ class PanoramaXMLParser:
     
     def get_all_addresses(self) -> List[AddressObject]:
         """Get all address objects from shared, device groups, templates, and vsys"""
+        # Return cached result if available
+        if self._cache['all_addresses'] is not None:
+            return self._cache['all_addresses']
+        
         all_addresses = []
         
         # Get shared addresses
@@ -185,12 +201,22 @@ class PanoramaXMLParser:
         for vsys_addresses in self.root.findall(".//devices/entry/vsys/entry/address"):
             all_addresses.extend(self._parse_addresses_from_element(vsys_addresses))
         
+        # Cache the result
+        self._cache['all_addresses'] = all_addresses
         return all_addresses
     
     def get_shared_addresses(self) -> List[AddressObject]:
         """Parse shared address objects"""
+        # Return cached result if available
+        if self._cache['shared_addresses'] is not None:
+            return self._cache['shared_addresses']
+        
         shared_addresses = self.root.find(".//shared/address")
-        return self._parse_addresses_from_element(shared_addresses)
+        result = self._parse_addresses_from_element(shared_addresses)
+        
+        # Cache the result
+        self._cache['shared_addresses'] = result
+        return result
     
     def get_shared_address_groups(self) -> List[AddressGroup]:
         """Parse shared address groups"""
@@ -237,9 +263,14 @@ class PanoramaXMLParser:
     
     def get_shared_services(self) -> List[ServiceObject]:
         """Parse shared service objects"""
+        # Return cached result if available
+        if self._cache['shared_services'] is not None:
+            return self._cache['shared_services']
+        
         services = []
         shared_services = self.root.find(".//shared/service")
         if shared_services is None:
+            self._cache['shared_services'] = services
             return services
         
         for entry in shared_services.findall("entry"):
@@ -279,6 +310,8 @@ class PanoramaXMLParser:
             service = ServiceObject(**service_dict)
             services.append(service)
         
+        # Cache the result
+        self._cache['shared_services'] = services
         return services
     
     def get_shared_service_groups(self) -> List[ServiceGroup]:
@@ -696,20 +729,31 @@ class PanoramaXMLParser:
     
     def get_device_group_addresses(self, device_group_name: str) -> List[AddressObject]:
         """Get addresses for a specific device group"""
+        # Return cached result if available
+        if device_group_name in self._cache['device_group_addresses']:
+            return self._cache['device_group_addresses'][device_group_name]
+        
         devices_entry = self.root.find("./devices/entry")
         if devices_entry is None:
+            self._cache['device_group_addresses'][device_group_name] = []
             return []
         
         dg_parent = devices_entry.find("device-group")
         if dg_parent is None:
+            self._cache['device_group_addresses'][device_group_name] = []
             return []
         
         dg_element = dg_parent.find(f"entry[@name='{device_group_name}']")
         if dg_element is None:
+            self._cache['device_group_addresses'][device_group_name] = []
             return []
         
         address_elem = dg_element.find("address")
-        return self._parse_addresses_from_element(address_elem)
+        result = self._parse_addresses_from_element(address_elem)
+        
+        # Cache the result
+        self._cache['device_group_addresses'][device_group_name] = result
+        return result
     
     def get_device_group_address_groups(self, device_group_name: str) -> List[AddressGroup]:
         """Get address groups for a specific device group"""
