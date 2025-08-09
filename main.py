@@ -1,10 +1,12 @@
 from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set
 import os
 import glob
+import asyncio
 from parser import PanoramaXMLParser
+from background_cache import background_cache
 from models import (
     AddressObject, AddressGroup, ServiceObject, ServiceGroup,
     VulnerabilityProfile, AntivirusProfile, SpywareProfile,
@@ -219,13 +221,68 @@ app = FastAPI(
 CONFIG_FILES_PATH = os.environ.get("CONFIG_FILES_PATH", "./config-files")
 parsers: Dict[str, PanoramaXMLParser] = {}
 available_configs: List[str] = []
+# Track which configs are fully loaded and ready
+ready_configs: Set[str] = set()
+# Track configs currently being loaded
+loading_configs: Set[str] = set()
 
 # Templates removed - using React frontend instead
 
+async def load_and_cache_config(config_name: str) -> None:
+    """Load a configuration and fully cache all its objects synchronously"""
+    import time
+    start_time = time.time()
+    xml_path = os.path.join(CONFIG_FILES_PATH, f"{config_name}.xml")
+    
+    print(f"  Parsing XML file...")
+    # Parse the XML file
+    parser = PanoramaXMLParser(xml_path)
+    parsers[config_name] = parser
+    
+    # Define what to cache with proper method names
+    cache_methods = [
+        ('addresses', 'get_all_addresses'),
+        ('address_groups', 'get_address_groups'),
+        ('services', 'get_shared_services'),
+        ('service_groups', 'get_shared_service_groups'),
+        ('device_groups', 'get_device_group_summaries'),
+        ('templates', 'get_templates'),
+        ('vulnerability_profiles', 'get_vulnerability_profiles'),
+        ('url_filtering_profiles', 'get_url_filtering_profiles'),
+    ]
+    
+    total_items = 0
+    # Cache each object type
+    for obj_type, method_name in cache_methods:
+        try:
+            if hasattr(parser, method_name):
+                print(f"  Caching {obj_type}...", end=" ", flush=True)
+                method = getattr(parser, method_name)
+                items = method()
+                
+                # Store in background cache
+                cache_key = f"{config_name}:{obj_type}"
+                background_cache.cache[cache_key] = {
+                    'items': items,
+                    'timestamp': time.time()
+                }
+                
+                item_count = len(items) if items else 0
+                total_items += item_count
+                print(f"{item_count} items")
+        except Exception as e:
+            print(f"Failed: {e}")
+    
+    # Mark this config as fully cached
+    background_cache.mark_config_ready(config_name)
+    
+    elapsed = time.time() - start_time
+    print(f"  Total: {total_items} items cached in {elapsed:.2f} seconds")
+
 @app.on_event("startup")
 async def startup_event():
-    """Scan for XML files on startup"""
-    global available_configs
+    """Scan for XML files and pre-load/cache them on startup"""
+    global available_configs, ready_configs, loading_configs
     
     if not os.path.exists(CONFIG_FILES_PATH):
         os.makedirs(CONFIG_FILES_PATH, exist_ok=True)
@@ -235,30 +292,56 @@ async def startup_event():
     
     if not xml_files:
         print(f"Warning: No XML files found in {CONFIG_FILES_PATH}")
+        return
     
     # Store available config names (without path and extension)
     available_configs = [os.path.splitext(os.path.basename(f))[0] for f in xml_files]
     print(f"Found {len(available_configs)} configuration files: {available_configs}")
+    
+    # Pre-load and fully cache each configuration
+    print("Pre-loading and caching all configurations...")
+    for config_name in available_configs:
+        print(f"Loading configuration: {config_name}")
+        loading_configs.add(config_name)
+        
+        try:
+            # Load the parser and trigger full caching synchronously
+            await load_and_cache_config(config_name)
+            ready_configs.add(config_name)
+            print(f"✓ Configuration '{config_name}' fully loaded and cached")
+        except Exception as e:
+            print(f"✗ Failed to load configuration '{config_name}': {e}")
+        finally:
+            loading_configs.discard(config_name)
+    
+    print(f"Startup complete. {len(ready_configs)}/{len(available_configs)} configurations ready.")
 
 def get_parser(config_name: str) -> PanoramaXMLParser:
-    """Get or create parser for a specific config file"""
-    if config_name not in parsers:
-        # Check if the config exists
-        if config_name not in available_configs:
+    """Get parser for a specific config file (must be fully loaded)"""
+    # Check if config is ready
+    if config_name not in ready_configs:
+        if config_name in loading_configs:
+            raise HTTPException(
+                status_code=503,  # Service Unavailable
+                detail=f"Configuration '{config_name}' is still being loaded. Please try again later."
+            )
+        elif config_name in available_configs:
+            raise HTTPException(
+                status_code=503,  # Service Unavailable
+                detail=f"Configuration '{config_name}' failed to load or is not ready."
+            )
+        else:
             raise HTTPException(
                 status_code=404, 
-                detail=f"Configuration '{config_name}' not found. Available configs: {available_configs}"
+                detail=f"Configuration '{config_name}' not found. Available configs: {list(ready_configs)}"
             )
-        
-        # Create parser for this config
-        xml_path = os.path.join(CONFIG_FILES_PATH, f"{config_name}.xml")
-        try:
-            parsers[config_name] = PanoramaXMLParser(xml_path)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to parse configuration '{config_name}': {str(e)}"
-            )
+    
+    # Return the pre-loaded parser
+    if config_name not in parsers:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal error: Configuration '{config_name}' marked as ready but parser not found."
+        )
     
     return parsers[config_name]
 
@@ -374,13 +457,20 @@ async def root():
 @app.get("/api/v1/configs",
          tags=["Configuration"],
          summary="List available configurations",
-         description="Get a list of all available XML configuration files")
+         description="Get a list of all fully loaded and cached XML configuration files")
 async def list_configs():
-    """List all available configuration files"""
+    """List all fully loaded and cached configuration files
+    
+    Only returns configurations that have been completely parsed and cached.
+    Configurations still being loaded will not appear in this list.
+    """
+    # Only return configs that are ready
     return {
-        "configs": available_configs,
-        "count": len(available_configs),
-        "path": CONFIG_FILES_PATH
+        "configs": list(ready_configs),
+        "count": len(ready_configs),
+        "path": CONFIG_FILES_PATH,
+        "loading": list(loading_configs),
+        "total_available": len(available_configs)
     }
 
 @app.get("/api/v1/configs/{config_name}/info",
@@ -391,7 +481,13 @@ async def get_config_info(
     config_name: str = Path(..., description="Configuration name (without .xml extension)")
 ):
     """Get information about a specific configuration"""
-    parser = get_parser(config_name)
+    # Check if config exists
+    if config_name not in available_configs:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Configuration '{config_name}' not found"
+        )
+    
     xml_path = os.path.join(CONFIG_FILES_PATH, f"{config_name}.xml")
     
     return {
@@ -399,7 +495,9 @@ async def get_config_info(
         "path": xml_path,
         "size": os.path.getsize(xml_path),
         "modified": os.path.getmtime(xml_path),
-        "loaded": config_name in parsers
+        "ready": config_name in ready_configs,
+        "loading": config_name in loading_configs,
+        "cached": background_cache.is_config_ready(config_name)
     }
 
 # Address Objects Endpoints
@@ -458,6 +556,37 @@ async def get_addresses(
     - filter[description][not_contains]=test
     - filter[parent_device_group][eq]=branch-offices
     """
+    # Check if we have cached data first
+    # Parse filter parameters to check for advanced filters
+    advanced_filters = parse_filter_params(dict(request.query_params))
+    
+    # Only use cache if no advanced filters are present
+    if background_cache.is_cached(config_name, 'addresses') and not advanced_filters:
+        # Check if simple filters are being applied
+        has_simple_filters = (name or tag or location != "all")
+        
+        if not has_simple_filters:
+            # No filters - return paginated cached data directly
+            cached_data = background_cache.get_cached_data(config_name, 'addresses', page, page_size)
+            if cached_data:
+                return cached_data
+        else:
+            # Simple filters present - use cached filtering
+            filtered_data = background_cache.get_filtered_cached_data(
+                config_name, 'addresses',
+                filters={
+                    'location': location,
+                    'name': name,
+                    'tag': tag,
+                    'advanced': {}  # No advanced filters
+                },
+                page=page,
+                page_size=page_size
+            )
+            if filtered_data:
+                return filtered_data
+    
+    # Fall back to parser if no cache available
     parser = get_parser(config_name)
     
     # Get addresses based on location filter
@@ -480,10 +609,9 @@ async def get_addresses(
     if tag:
         addresses = [a for a in addresses if a.tag and tag in a.tag]
     
-    # Apply advanced filters
-    filter_params = parse_filter_params(dict(request.query_params))
-    if filter_params:
-        addresses = apply_filters(addresses, filter_params, ADDRESS_FILTERS)
+    # Apply advanced filters (already parsed above)
+    if advanced_filters:
+        addresses = apply_filters(addresses, advanced_filters, ADDRESS_FILTERS)
     
     # Apply pagination
     pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
@@ -551,6 +679,47 @@ async def get_address_groups(
     - filter[tag][in]=production
     - filter[description][starts_with]=DMZ
     """
+    # Check if we have cached data first
+    if background_cache.is_cached(config_name, 'address_groups'):
+        # Get all cached items for filtering
+        all_cached_data = background_cache.get_cached_data(config_name, 'address_groups', page=1, page_size=999999)
+        if all_cached_data:
+            items = all_cached_data['items']
+            
+            # Apply legacy filters
+            if name:
+                items = [g for g in items if name.lower() in g.get('name', '').lower()]
+            if tag:
+                items = [g for g in items if g.get('tag') and tag in g.get('tag')]
+            
+            # Apply advanced filters
+            filter_params = parse_filter_params(dict(request.query_params))
+            if filter_params:
+                # Convert dict items to objects for filter compatibility
+                from types import SimpleNamespace
+                items = [SimpleNamespace(**item) for item in items]
+                items = apply_filters(items, filter_params, GROUP_FILTERS)
+                # Convert back to dicts
+                items = [vars(item) for item in items]
+            
+            # Now apply pagination after filtering
+            total_items = len(items)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_items = items[start_idx:end_idx]
+            
+            return {
+                "items": paginated_items,
+                "total_items": total_items,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_items + page_size - 1) // page_size,
+                "has_next": end_idx < total_items,
+                "has_previous": page > 1,
+                "from_cache": True
+            }
+    
+    # Fall back to parser if no cache available
     parser = get_parser(config_name)
     groups = parser.get_shared_address_groups()
     
@@ -634,6 +803,47 @@ async def get_services(
     - filter[protocol][eq]=tcp
     - filter[tag][contains]=web
     """
+    # Check if we have cached data first
+    if background_cache.is_cached(config_name, 'services'):
+        # Get all cached items for filtering
+        all_cached_data = background_cache.get_cached_data(config_name, 'services', page=1, page_size=999999)
+        if all_cached_data:
+            items = all_cached_data['items']
+            
+            # Apply legacy filters
+            if name:
+                items = [s for s in items if name.lower() in s.get('name', '').lower()]
+            if protocol and protocol.lower() in ["tcp", "udp"]:
+                items = [s for s in items if s.get('protocol', {}).get(protocol.lower())]
+            
+            # Apply advanced filters
+            filter_params = parse_filter_params(dict(request.query_params))
+            if filter_params:
+                # Convert dict items to objects for filter compatibility
+                from types import SimpleNamespace
+                items = [SimpleNamespace(**item) for item in items]
+                items = apply_filters(items, filter_params, SERVICE_FILTERS)
+                # Convert back to dicts
+                items = [vars(item) for item in items]
+            
+            # Now apply pagination after filtering
+            total_items = len(items)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_items = items[start_idx:end_idx]
+            
+            return {
+                "items": paginated_items,
+                "total_items": total_items,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_items + page_size - 1) // page_size,
+                "has_next": end_idx < total_items,
+                "has_previous": page > 1,
+                "from_cache": True
+            }
+    
+    # Fall back to parser if no cache available
     parser = get_parser(config_name)
     services = parser.get_shared_services()
     
@@ -950,6 +1160,47 @@ async def get_device_groups(
     - filter[address_count][lt]=100
     - filter[description][contains]=branch
     """
+    # Check if we have cached data first
+    if background_cache.is_cached(config_name, 'device_groups'):
+        # Get all cached items for filtering
+        all_cached_data = background_cache.get_cached_data(config_name, 'device_groups', page=1, page_size=999999)
+        if all_cached_data:
+            items = all_cached_data['items']
+            
+            # Apply legacy filters
+            if name:
+                items = [g for g in items if name.lower() in g.get('name', '').lower()]
+            if parent:
+                items = [g for g in items if g.get('parent-dg') and parent.lower() in g.get('parent-dg', '').lower()]
+            
+            # Apply advanced filters
+            filter_params = parse_filter_params(dict(request.query_params))
+            if filter_params:
+                # Convert dict items to objects for filter compatibility
+                from types import SimpleNamespace
+                items = [SimpleNamespace(**item) for item in items]
+                items = apply_filters(items, filter_params, DEVICE_GROUP_FILTERS)
+                # Convert back to dicts
+                items = [vars(item) for item in items]
+            
+            # Now apply pagination after filtering
+            total_items = len(items)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_items = items[start_idx:end_idx]
+            
+            return {
+                "items": paginated_items,
+                "total_items": total_items,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_items + page_size - 1) // page_size,
+                "has_next": end_idx < total_items,
+                "has_previous": page > 1,
+                "from_cache": True
+            }
+    
+    # Fall back to parser if no cache available
     parser = get_parser(config_name)
     groups = parser.get_device_group_summaries()
     
@@ -1429,6 +1680,20 @@ async def search_by_xpath(
     
     return results
 
+# Cache status endpoint
+@app.get("/api/v1/configs/{config_name}/cache-status",
+         tags=["System"],
+         summary="Get cache status",
+         description="Get the caching status for a specific configuration")
+async def get_cache_status(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)")
+):
+    """Get cache status for a configuration"""
+    # Ensure parser exists (will trigger caching if not already started)
+    _ = get_parser(config_name)
+    
+    return background_cache.get_cache_status(config_name)
+
 # Health check endpoint
 @app.get("/api/v1/health",
          tags=["System"],
@@ -1440,7 +1705,8 @@ async def health_check():
         "status": "healthy",
         "config_path": CONFIG_FILES_PATH,
         "configs_available": len(available_configs),
-        "configs_loaded": len(parsers),
+        "configs_ready": len(ready_configs),
+        "configs_loading": len(loading_configs),
         "available_configs": available_configs
     }
 

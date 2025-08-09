@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useTransition } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/data-table'
@@ -86,6 +86,9 @@ export function AddressesTable() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 100 })
   const [detailItem, setDetailItem] = useState<Address | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [displayData, setDisplayData] = useState<Address[]>([])
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isPending, startTransition] = useTransition()
   
   // Use debounced filters
   const {
@@ -94,10 +97,13 @@ export function AddressesTable() {
     isDebouncing,
     handleFiltersChange: handleFiltersChangeDebounced,
     resetFilters
-  } = useDebouncedFilters([], 500) // 500ms debounce
+  } = useDebouncedFilters([], 300) // 300ms debounce
   
   // Memoize handlers to prevent column recreation
   const handleFiltersChange = useCallback((newFilters: ColumnFilter[]) => {
+    // Immediately clear data and show loading state
+    setIsTransitioning(true)
+    setDisplayData([])
     setPagination({ pageIndex: 0, pageSize: pagination.pageSize }) // Reset to first page
     handleFiltersChangeDebounced(newFilters)
   }, [pagination.pageSize, handleFiltersChangeDebounced])
@@ -106,12 +112,20 @@ export function AddressesTable() {
     setDetailItem(item)
   }, [])
 
+  const handlePaginationChange = useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setIsTransitioning(true)
+    setDisplayData([])
+    setPagination(newPagination)
+  }, [])
+
   // Reset pagination and filters when config changes
   useEffect(() => {
     setPagination({ pageIndex: 0, pageSize: 100 })
     resetFilters()
     setIsInitialLoad(true)
     setDetailItem(null)
+    setDisplayData([])
+    setIsTransitioning(false)
   }, [selectedConfig?.name, resetFilters])
 
   const { data, isLoading, isFetching, error } = useQuery({
@@ -154,6 +168,16 @@ export function AddressesTable() {
     },
     retryDelay: 1000,
   })
+
+  // Update display data when query data changes
+  useEffect(() => {
+    if (data?.items) {
+      startTransition(() => {
+        setDisplayData(data.items)
+        setIsTransitioning(false)
+      })
+    }
+  }, [data])
 
   const columns: ColumnDef<Address>[] = useMemo(() => [
     {
@@ -198,7 +222,7 @@ export function AddressesTable() {
         <FilterableColumnHeader
           column={column}
           title="Value"
-          field="ip-netmask,ip-range,fqdn"
+          field="value"
           filters={filters}
           onFiltersChange={handleFiltersChange}
           filterOperators={[
@@ -217,7 +241,7 @@ export function AddressesTable() {
         <FilterableColumnHeader
           column={column}
           title="Location"
-          field="parent-device-group,parent-template,parent-vsys"
+          field="parent-device-group"
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -311,11 +335,11 @@ export function AddressesTable() {
         
         <DataTable
           columns={columns}
-          data={data?.items || []}
+          data={displayData}
           pageCount={data?.total_pages}
           pagination={pagination}
-          onPaginationChange={setPagination}
-          loading={isFetching || isDebouncing}
+          onPaginationChange={handlePaginationChange}
+          loading={isFetching || isTransitioning || isDebouncing || isPending}
         />
       </div>
 

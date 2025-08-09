@@ -12,6 +12,7 @@ class ConfigLocation(BaseModel):
     
     class Config:
         populate_by_name = True
+        by_alias = True  # Use aliases (hyphens) in JSON serialization
 
 
 class ProtocolType(str, Enum):

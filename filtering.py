@@ -160,6 +160,11 @@ class FilterProcessor:
         if value is None:
             return operator == FilterOperator.NOT_EQUALS and filter_value is not None
         
+        # Handle enum values - convert to their string representation
+        from enum import Enum
+        if isinstance(value, Enum):
+            value = value.value
+        
         # Pre-define string operators set for faster lookup
         STRING_OPERATORS = {
             FilterOperator.CONTAINS,
@@ -432,6 +437,23 @@ ADDRESS_FILTERS = FilterDefinition(create_filter_with_aliases({
         FilterOperator.STARTS_WITH,
         FilterOperator.ENDS_WITH
     ]),
+    # Note: 'value' field checks ip_netmask, ip_range, or fqdn
+    "value": FilterConfig(
+        "value",
+        custom_getter=lambda obj: (
+            getattr(obj, 'ip_netmask', None) or 
+            getattr(obj, 'ip_range', None) or 
+            getattr(obj, 'fqdn', None) or 
+            ''
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS,
+            FilterOperator.STARTS_WITH,
+            FilterOperator.ENDS_WITH
+        ]
+    ),
     # Note: 'ip' is an alias for 'ip_netmask' field
     "ip": FilterConfig("ip_netmask", operators=[
         FilterOperator.EQUALS,
