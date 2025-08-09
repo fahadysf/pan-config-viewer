@@ -56,7 +56,26 @@ class ZODBCache:
     
     def __init__(self, cache_dir: str = "./cache"):
         self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(exist_ok=True)
+        try:
+            self.cache_dir.mkdir(exist_ok=True, parents=True)
+            # Test if we can write to the cache directory
+            test_file = self.cache_dir / ".write_test"
+            test_file.touch()
+            test_file.unlink()
+            self.cache_enabled = True
+            
+            # Clean up any stale lock files from previous runs
+            for lock_file in self.cache_dir.glob("*.lock"):
+                try:
+                    lock_file.unlink()
+                    logger.info(f"Removed stale lock file: {lock_file.name}")
+                except Exception as e:
+                    logger.warning(f"Could not remove lock file {lock_file.name}: {e}")
+                    
+        except (PermissionError, OSError) as e:
+            logger.warning(f"Cache directory is not writable: {e}")
+            logger.warning("ZODB caching disabled - running without persistent cache")
+            self.cache_enabled = False
         self.connections = {}
         self.databases = {}
         
@@ -82,16 +101,38 @@ class ZODBCache:
             db = self.databases[config_name]
             connection = self.connections[config_name]
         else:
-            storage = FileStorage(str(cache_path))
-            db = DB(storage)
-            connection = db.open()
-            self.databases[config_name] = db
-            self.connections[config_name] = connection
+            try:
+                # Try to open with file locking
+                storage = FileStorage(str(cache_path))
+                db = DB(storage)
+                connection = db.open()
+                self.databases[config_name] = db
+                self.connections[config_name] = connection
+            except Exception as e:
+                logger.error(f"Failed to open ZODB database for {config_name}: {e}")
+                # Clean up any lock files and retry once
+                lock_file = Path(str(cache_path) + ".lock")
+                if lock_file.exists():
+                    try:
+                        lock_file.unlink()
+                        logger.info(f"Removed stale lock file for {config_name}")
+                        storage = FileStorage(str(cache_path))
+                        db = DB(storage)
+                        connection = db.open()
+                        self.databases[config_name] = db
+                        self.connections[config_name] = connection
+                    except Exception as e2:
+                        logger.error(f"Failed to open database after removing lock: {e2}")
+                        raise
+                else:
+                    raise
             
         return db, connection
     
     def is_cache_valid(self, config_name: str, xml_path: str) -> bool:
         """Check if cached data is valid for the current XML file"""
+        if not self.cache_enabled:
+            return False
         try:
             # Calculate current file hash
             current_hash = self._get_file_hash(xml_path)
@@ -126,6 +167,8 @@ class ZODBCache:
     
     def load_from_cache(self, config_name: str) -> Optional[Dict[str, Any]]:
         """Load cached configuration data"""
+        if not self.cache_enabled:
+            return None
         try:
             db, connection = self._open_database(config_name)
             root = connection.root()
@@ -149,6 +192,9 @@ class ZODBCache:
     
     def save_to_cache(self, config_name: str, xml_path: str, data: Dict[str, Any]):
         """Save configuration data to cache"""
+        if not self.cache_enabled:
+            logger.debug("Cache disabled, skipping save")
+            return
         try:
             # Calculate file hash
             md5_hash = self._get_file_hash(xml_path)
