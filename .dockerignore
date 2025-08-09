@@ -37,10 +37,20 @@ mkdocs.yml
 # Config files (will be mounted as volumes)
 config-files/*.xml
 
+# Cache directory (will be mounted as volume)
+cache/
+*.zodb
+*.zodb.index
+*.zodb.lock
+*.zodb.tmp
+
 # Testing
 tests/
 test_*.py
 *_test.py
+debug_*.py
+test-*.html
+test-*.js
 
 # CI/CD
 .github/

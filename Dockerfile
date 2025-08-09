@@ -44,8 +44,8 @@ COPY . .
 # Copy built frontend from the frontend-builder stage
 COPY --from=frontend-builder /app/static/dist ./static/dist
 
-# Create directories for config files
-RUN mkdir -p /app/config-files
+# Create directories for config files and cache
+RUN mkdir -p /app/config-files /app/cache
 
 # Create a non-root user to run the application
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
