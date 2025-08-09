@@ -12,6 +12,8 @@ services:
     volumes:
       # Mount directory containing XML files
       - ${CONFIG_DIR:-./config-files}:/config-files:ro
+      # Mount cache directory for ZODB persistence
+      - ${CACHE_DIR:-./cache}:/app/cache
     environment:
       - CONFIG_FILES_PATH=/config-files
       - LOG_LEVEL=${LOG_LEVEL:-info}
