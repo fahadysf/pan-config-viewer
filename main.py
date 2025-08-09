@@ -404,9 +404,25 @@ def get_parser(config_name: str) -> PanoramaXMLParser:
 
 def paginate_results(items: List, pagination: PaginationParams) -> Dict:
     """Apply pagination to a list of items and return paginated response"""
+    
+    # Serialize items if they are Pydantic models to ensure proper JSON serialization
+    def serialize_items(item_list):
+        serialized = []
+        for item in item_list:
+            if hasattr(item, 'model_dump'):
+                # Pydantic v2
+                serialized.append(item.model_dump())
+            elif hasattr(item, 'dict'):
+                # Pydantic v1 (deprecated but still supported)
+                serialized.append(item.dict())
+            else:
+                # Not a Pydantic model, use as-is
+                serialized.append(item)
+        return serialized
+    
     if pagination.disable_paging:
         return {
-            "items": items,
+            "items": serialize_items(items),
             "total_items": len(items),
             "page": 1,
             "page_size": len(items),
@@ -426,7 +442,7 @@ def paginate_results(items: List, pagination: PaginationParams) -> Dict:
     paginated_items = items[start_idx:end_idx]
     
     return {
-        "items": paginated_items,
+        "items": serialize_items(paginated_items),
         "total_items": total_items,
         "page": pagination.page,
         "page_size": pagination.page_size,
@@ -438,10 +454,13 @@ def paginate_results(items: List, pagination: PaginationParams) -> Dict:
 def parse_filter_params(params: Dict[str, Any]) -> Dict[str, Any]:
     """Parse filter parameters from request with validation
     
-    Supports dot notation for filters:
-    - filter.name=value (defaults to contains operator)
-    - filter.name.equals=value (explicit operator)
-    - filter.name.starts_with=value
+    Supports both dot and bracket notation for filters:
+    - filter.name=value (dot notation, defaults to contains operator)
+    - filter.name.equals=value (dot notation, explicit operator)
+    - filter[name]=value (bracket notation, defaults to contains operator)
+    - filter[name][equals]=value (bracket notation, explicit operator)
+    - filter_name=value (direct parameter name format)
+    - filter_name_equals=value (direct parameter name with operator format)
     """
     filters = {}
     
@@ -469,8 +488,27 @@ def parse_filter_params(params: Dict[str, Any]) -> Dict[str, Any]:
         'exists': 'exists'
     }
     
+    import re
+    
     for key, value in params.items():
-        if key.startswith('filter.') and value is not None:
+        if value is None:
+            continue
+            
+        # Handle bracket notation: filter[field] or filter[field][operator]
+        bracket_match = re.match(r'^filter\[([^\]]+)\](?:\[([^\]]+)\])?$', key)
+        if bracket_match:
+            field, operator = bracket_match.groups()
+            if operator and operator in operator_aliases:
+                # filter[field][operator] format
+                op = operator_aliases[operator]
+                filters[f"{field}_{op}"] = value
+            else:
+                # filter[field] format (default to contains operator)
+                filters[field] = value
+            continue
+            
+        # Handle dot notation: filter.field or filter.field.operator
+        if key.startswith('filter.'):
             try:
                 # Extract field name and operator from filter.field or filter.field.operator
                 filter_key = key[7:]  # Remove 'filter.' prefix
@@ -497,6 +535,29 @@ def parse_filter_params(params: Dict[str, Any]) -> Dict[str, Any]:
                     
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=f"Error parsing filter {key}: {str(e)}")
+            continue
+            
+        # Handle direct parameter format: filter_field or filter_field_operator
+        if key.startswith('filter_'):
+            filter_key = key[7:]  # Remove 'filter_' prefix
+            if not filter_key:
+                continue
+                
+            # Check if the key ends with an operator
+            found_operator = False
+            for op_alias, op_value in operator_aliases.items():
+                if filter_key.endswith(f"_{op_alias}"):
+                    # filter_field_operator format
+                    field = filter_key[:-len(f"_{op_alias}")]
+                    if field:
+                        filters[f"{field}_{op_value}"] = value
+                        found_operator = True
+                        break
+            
+            if not found_operator:
+                # filter_field format (default to contains operator)
+                filters[filter_key] = value
+                
     return filters
 
 @app.get("/", include_in_schema=False)

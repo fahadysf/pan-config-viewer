@@ -57,8 +57,21 @@ class Protocol(BaseModel):
 class ServiceObject(ConfigLocation):
     name: str = Field(..., description="Service object name")
     protocol: Protocol = Field(..., description="Protocol configuration")
+    type: Optional[ProtocolType] = Field(None, description="Protocol type (tcp/udp)")
     description: Optional[str] = Field(None, description="Service description")
     tag: Optional[List[str]] = Field(None, description="Tags associated with the service")
+    
+    @model_validator(mode='after')
+    def validate_protocol_type(self):
+        """Determine the protocol type based on which protocol is configured"""
+        if self.protocol.tcp is not None:
+            self.type = ProtocolType.TCP
+        elif self.protocol.udp is not None:
+            self.type = ProtocolType.UDP
+        else:
+            # If no protocol is set, keep existing type or set to None
+            pass
+        return self
 
 
 class ServiceGroup(ConfigLocation):
