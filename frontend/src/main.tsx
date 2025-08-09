@@ -4,20 +4,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import './index.css'
 
-// Debug: Check if script is running
-console.log('React app initializing...')
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 30 * 1000, // 30 seconds
+      gcTime: 60 * 1000, // 1 minute (was cacheTime)
+      refetchOnMount: 'always', // Changed to always refetch on mount
+      refetchOnReconnect: false,
+    },
+    mutations: {
+      retry: 0,
     },
   },
 })
 
 const rootElement = document.getElementById('root')
-console.log('Root element:', rootElement)
 
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
@@ -27,7 +30,4 @@ if (rootElement) {
       </QueryClientProvider>
     </React.StrictMode>,
   )
-  console.log('React app mounted successfully')
-} else {
-  console.error('Root element not found!')
 }
