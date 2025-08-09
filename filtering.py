@@ -454,14 +454,22 @@ ADDRESS_FILTERS = FilterDefinition(create_filter_with_aliases({
             FilterOperator.ENDS_WITH
         ]
     ),
-    # Note: 'ip' is an alias for 'ip_netmask' field
-    "ip": FilterConfig("ip_netmask", operators=[
-        FilterOperator.EQUALS,
-        FilterOperator.NOT_EQUALS,
-        FilterOperator.CONTAINS,
-        FilterOperator.STARTS_WITH,
-        FilterOperator.ENDS_WITH
-    ]),
+    # Note: 'ip' is an alias that checks both 'ip_netmask' and 'ip_range' fields
+    "ip": FilterConfig(
+        "ip",
+        custom_getter=lambda obj: (
+            getattr(obj, 'ip_netmask', None) or 
+            getattr(obj, 'ip_range', None) or 
+            ''
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS,
+            FilterOperator.STARTS_WITH,
+            FilterOperator.ENDS_WITH
+        ]
+    ),
     "ip_netmask": FilterConfig("ip_netmask", operators=[
         FilterOperator.EQUALS,
         FilterOperator.NOT_EQUALS,
@@ -527,7 +535,14 @@ ADDRESS_FILTERS = FilterDefinition(create_filter_with_aliases({
             FilterOperator.EQUALS,
             FilterOperator.NOT_EQUALS
         ]
-    )
+    ),
+    "type": FilterConfig("type", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.IN,
+        FilterOperator.NOT_IN
+    ])
 }))
 
 # Service object filters - comprehensive filtering for all properties
