@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useConfigStore } from '@/stores/configStore'
+import { useLoadingStore } from '@/stores/loadingStore'
+// import { useConfigStats } from '@/hooks/useConfigStats'
 import { configApi } from '@/services/api'
 import {
   Select,
@@ -14,7 +16,20 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export function Header() {
-  const { configs, selectedConfig, setConfigs, setSelectedConfig, setLoading } = useConfigStore()
+  const { 
+    configs, 
+    selectedConfig, 
+    setConfigs, 
+    setSelectedConfig, 
+    setLoading,
+    setTransitioning,
+    resetStats 
+  } = useConfigStore()
+  const { resetLoadingState } = useLoadingStore()
+  const queryClient = useQueryClient()
+  
+  // Use the stats hook to trigger stats loading
+  // const statsInfo = useConfigStats()
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['configs'],
@@ -42,9 +57,41 @@ export function Header() {
           
           <Select
             value={selectedConfig?.name || ''}
-            onValueChange={(value) => {
+            onValueChange={async (value) => {
               const config = configs.find(c => c.name === value)
+              
+              // Don't do anything if it's the same config
+              if (config?.name === selectedConfig?.name) return
+              
+              // Start transition
+              setTransitioning(true)
+              resetStats()
+              resetLoadingState()
+              
+              // Cancel current queries
+              await queryClient.cancelQueries({
+                predicate: (query) => query.queryKey[0] !== 'configs'
+              })
+              
+              // Remove old queries from cache
+              queryClient.removeQueries({
+                predicate: (query) => {
+                  const key = query.queryKey
+                  // Keep configs query
+                  if (Array.isArray(key) && key[0] === 'configs') return false
+                  // Remove queries with old config name
+                  if (Array.isArray(key) && key.includes(selectedConfig?.name)) return true
+                  return false
+                }
+              })
+              
+              // Set the new config
               setSelectedConfig(config || null)
+              
+              // End transition quickly to allow queries to start
+              setTimeout(() => {
+                setTransitioning(false)
+              }, 50)
             }}
           >
             <SelectTrigger className="w-[300px]">

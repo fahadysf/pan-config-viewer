@@ -21,6 +21,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 60000, // 60 second timeout to prevent hanging
 })
 
 // Extend AxiosRequestConfig to include metadata
@@ -39,21 +40,31 @@ api.interceptors.request.use((config) => {
 })
 
 // Add response interceptor to track API stats
-api.interceptors.response.use((response) => {
-  const endTime = Date.now()
-  const duration = endTime - (response.config.metadata?.startTime || Date.now())
-  
-  // Add to stats store
-  const { addStat } = useApiStatsStore.getState()
-  addStat({
-    endpoint: response.config.url || '',
-    query_time: duration,
-    items_retrieved: response.data.items?.length || response.data.length || 0,
-    timestamp: endTime,
-  })
-  
-  return response
-})
+api.interceptors.response.use(
+  (response) => {
+    const endTime = Date.now()
+    const duration = endTime - (response.config.metadata?.startTime || Date.now())
+    
+    // Add to stats store
+    const { addStat } = useApiStatsStore.getState()
+    addStat({
+      endpoint: response.config.url || '',
+      query_time: duration,
+      items_retrieved: response.data.items?.length || response.data.length || 0,
+      timestamp: endTime,
+    })
+    
+    return response
+  },
+  (error) => {
+    // Handle cancellation gracefully
+    if (axios.isCancel(error)) {
+      console.log('Request cancelled:', error.message)
+      return Promise.resolve(null)
+    }
+    return Promise.reject(error)
+  }
+)
 
 // Build filter query params
 const buildFilterParams = (filters: ColumnFilter[]): Record<string, string> => {
@@ -73,6 +84,11 @@ const buildFilterParams = (filters: ColumnFilter[]): Record<string, string> => {
 
 // API methods
 export const configApi = {
+  getConfigInfo: async (configName: string): Promise<Config> => {
+    const response = await api.get(`/configs/${configName}/info`)
+    return response.data
+  },
+
   getConfigs: async (): Promise<Config[]> => {
     const response = await api.get('/configs')
     // The API returns { configs: [...], count: number, path: string }

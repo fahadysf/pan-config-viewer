@@ -7,12 +7,15 @@ interface ConfigStore {
   activeSection: string
   loading: boolean
   stats: Record<string, number>
+  isTransitioning: boolean
   setConfigs: (configs: Config[]) => void
   setSelectedConfig: (config: Config | null) => void
   setActiveSection: (section: string) => void
   setLoading: (loading: boolean) => void
   setStats: (stats: Record<string, number>) => void
   updateStat: (key: string, value: number) => void
+  setTransitioning: (transitioning: boolean) => void
+  resetStats: () => void
 }
 
 export const useConfigStore = create<ConfigStore>((set) => ({
@@ -21,6 +24,7 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   activeSection: 'addresses',
   loading: false,
   stats: {},
+  isTransitioning: false,
   setConfigs: (configs) => set({ configs }),
   setSelectedConfig: (config) => set({ selectedConfig: config }),
   setActiveSection: (section) => set({ activeSection: section }),
@@ -29,4 +33,6 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   updateStat: (key, value) => set((state) => ({ 
     stats: { ...state.stats, [key]: value } 
   })),
+  setTransitioning: (transitioning) => set({ isTransitioning: transitioning }),
+  resetStats: () => set({ stats: {} }),
 }))
