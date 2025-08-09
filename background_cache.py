@@ -230,7 +230,13 @@ class BackgroundCacheManager:
                     try:
                         if hasattr(obj, 'dict'):
                             # Use by_alias=True to ensure field names use hyphens
-                            batch_data.append(obj.dict(by_alias=True))
+                            obj_dict = obj.dict(by_alias=True)
+                            
+                            # For service objects, ensure we include the computed type field
+                            if obj_type == 'services' and hasattr(obj, 'type') and obj.type:
+                                obj_dict['type'] = obj.type.value
+                            
+                            batch_data.append(obj_dict)
                         elif hasattr(obj, '__dict__'):
                             batch_data.append(obj.__dict__)
                         else:
@@ -408,6 +414,63 @@ class BackgroundCacheManager:
                         if obj.fqdn:
                             item_dict['fqdn'] = obj.fqdn
                             
+                        filtered_items.append(item_dict)
+                
+                elif obj_type == 'services':
+                    from models import ServiceObject, Protocol
+                    from filtering import apply_filters, SERVICE_FILTERS
+                    
+                    # Convert cached dictionaries to ServiceObject instances
+                    service_objects = []
+                    logger.debug(f"Reconstructing {len(filtered_items)} items to ServiceObject")
+                    for item in filtered_items:
+                        try:
+                            # Create ServiceObject from cached data
+                            protocol_data = Protocol(
+                                tcp=item.get('protocol', {}).get('tcp'),
+                                udp=item.get('protocol', {}).get('udp')
+                            )
+                            
+                            service_data = {
+                                'name': item.get('name'),
+                                'protocol': protocol_data,
+                                'description': item.get('description'),
+                                'tag': item.get('tag'),
+                                'xpath': item.get('xpath'),
+                                'parent_device_group': item.get('parent-device-group'),
+                                'parent_template': item.get('parent-template'),
+                                'parent_vsys': item.get('parent-vsys')
+                            }
+                            
+                            service_obj = ServiceObject(**service_data)
+                            service_objects.append(service_obj)
+                        except Exception as e:
+                            # Log the error for debugging
+                            logger.error(f"Failed to reconstruct ServiceObject for {item.get('name')}: {e}")
+                            continue
+                    
+                    # Apply advanced filters to objects
+                    logger.debug(f"Applying filters to {len(service_objects)} reconstructed objects")
+                    filtered_objects = apply_filters(service_objects, advanced_filters, SERVICE_FILTERS)
+                    logger.debug(f"Filter result: {len(filtered_objects)} objects matched")
+                    
+                    # Convert back to dictionary format for caching consistency
+                    filtered_items = []
+                    for obj in filtered_objects:
+                        item_dict = {
+                            'name': obj.name,
+                            'description': obj.description,
+                            'tag': obj.tag,
+                            'xpath': obj.xpath,
+                            'parent-device-group': obj.parent_device_group,
+                            'parent-template': obj.parent_template,
+                            'parent-vsys': obj.parent_vsys,
+                            'protocol': {
+                                'tcp': obj.protocol.tcp,
+                                'udp': obj.protocol.udp
+                            },
+                            'type': obj.type.value if obj.type else None
+                        }
                         filtered_items.append(item_dict)
             
             # Apply pagination to filtered results

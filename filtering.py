@@ -628,6 +628,13 @@ SERVICE_FILTERS = FilterDefinition(create_filter_with_aliases({
         FilterOperator.EQUALS,
         FilterOperator.NOT_EQUALS,
         FilterOperator.CONTAINS
+    ]),
+    "type": FilterConfig("type", operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.CONTAINS,
+        FilterOperator.IN,
+        FilterOperator.NOT_IN
     ])
 }))
 
