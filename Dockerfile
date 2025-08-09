@@ -44,8 +44,13 @@ COPY . .
 # Copy built frontend from the frontend-builder stage
 COPY --from=frontend-builder /app/static/dist ./static/dist
 
-# Create directories for config files and cache
-RUN mkdir -p /app/config-files /app/cache
+# Copy and set permissions for entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Create directories for config files and cache with proper permissions
+RUN mkdir -p /app/config-files /app/cache && \
+    chmod 777 /app/cache
 
 # Create a non-root user to run the application
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
@@ -57,6 +62,9 @@ EXPOSE 8000
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/configs || exit 1
+
+# Use entrypoint script to handle permissions
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Command to run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
