@@ -561,6 +561,29 @@ SERVICE_FILTERS = FilterDefinition(create_filter_with_aliases({
         FilterOperator.STARTS_WITH,
         FilterOperator.ENDS_WITH
     ]),
+    "value": FilterConfig(
+        "protocol", 
+        custom_getter=lambda obj: (
+            # First check if obj has protocol attribute
+            "tcp" if hasattr(obj, 'protocol') and obj.protocol and (
+                # Check if protocol is a dict (cached data or SimpleNamespace)
+                (isinstance(obj.protocol, dict) and obj.protocol.get('tcp') is not None) or
+                # Check if protocol is an object with tcp attribute
+                (hasattr(obj.protocol, 'tcp') and obj.protocol.tcp is not None)
+            )
+            else "udp" if hasattr(obj, 'protocol') and obj.protocol and (
+                # Check if protocol is a dict (cached data or SimpleNamespace)
+                (isinstance(obj.protocol, dict) and obj.protocol.get('udp') is not None) or
+                # Check if protocol is an object with udp attribute
+                (hasattr(obj.protocol, 'udp') and obj.protocol.udp is not None)
+            )
+            else None
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS
+        ]
+    ),
     "protocol": FilterConfig(
         "protocol",
         custom_getter=lambda obj: (
