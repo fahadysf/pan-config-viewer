@@ -1030,24 +1030,89 @@ async def get_service_groups(
     request: Request,
     config_name: str = Path(..., description="Configuration name (without .xml extension)"),
     name: Optional[str] = Query(None, description="Filter by group name (partial match)"),
+    tag: Optional[str] = Query(None, description="Filter by tag"),
     page: int = Query(1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
     disable_paging: bool = Query(False, description="Return all results without pagination")
 ):
     """Get all shared service groups with optional filtering and pagination
     
-    Supports advanced filtering with the following parameters:
-    - filter[name]: Filter by group name
-    - filter[description]: Filter by description
-    - filter[member]: Filter by member services
-    - filter[tag]: Filter by tags
+    Supports comprehensive filtering on all service group properties:
+    
+    **Basic filters:**
+    - name: Filter by group name (partial match)
+    - tag: Filter by tag
+    
+    **Advanced filters using filter[property] syntax:**
+    - filter[name]: Name filtering with operators
+    - filter[description]: Description filtering
+    - filter[member]: Filter by member services (supports list operations)
+    - filter[tag]: Tag filtering (supports list operations)
+    - filter[xpath]: XPath location filtering
+    - filter[parent_device_group]: Parent device group filtering
+    - filter[parent_template]: Parent template filtering
+    - filter[parent_vsys]: Parent vsys filtering
+    
+    **Supported operators:**
+    - [eq], [ne]: Exact match / not equals
+    - [contains], [not_contains]: Contains / does not contain
+    - [starts_with], [ends_with]: String prefix/suffix matching
+    - [in], [not_in]: List membership operations
+    
+    **Examples:**
+    - filter[member][contains]=http
+    - filter[tag][in]=production
+    - filter[description][starts_with]=Web
     """
+    # Check if we have cached data first
+    if background_cache.is_cached(config_name, 'service_groups'):
+        # Get all cached items for filtering
+        all_cached_data = background_cache.get_cached_data(config_name, 'service_groups', page=1, page_size=999999)
+        if all_cached_data:
+            items = all_cached_data['items']
+            
+            # Apply legacy filters
+            if name:
+                items = [g for g in items if name.lower() in g.get('name', '').lower()]
+            if tag:
+                items = [g for g in items if g.get('tag') and tag in g.get('tag')]
+            
+            # Apply advanced filters
+            filter_params = parse_filter_params(dict(request.query_params))
+            if filter_params:
+                # Convert dict items to objects for filter compatibility
+                from types import SimpleNamespace
+                items = [SimpleNamespace(**item) for item in items]
+                items = apply_filters(items, filter_params, GROUP_FILTERS)
+                # Convert back to dicts
+                items = [vars(item) for item in items]
+            
+            # Now apply pagination after filtering
+            total_items = len(items)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_items = items[start_idx:end_idx]
+            
+            return {
+                "items": paginated_items,
+                "total_items": total_items,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_items + page_size - 1) // page_size,
+                "has_next": end_idx < total_items,
+                "has_previous": page > 1,
+                "from_cache": True
+            }
+    
+    # Fall back to parser if no cache available
     parser = get_parser(config_name)
     groups = parser.get_shared_service_groups()
     
     # Apply legacy filters for backwards compatibility
     if name:
         groups = [g for g in groups if name.lower() in g.name.lower()]
+    if tag:
+        groups = [g for g in groups if g.tag and tag in g.tag]
     
     # Apply advanced filters
     filter_params = parse_filter_params(dict(request.query_params))
@@ -1304,43 +1369,29 @@ async def get_device_groups(
     """
     # Check if we have cached data first
     if background_cache.is_cached(config_name, 'device_groups'):
-        # Get all cached items for filtering
-        all_cached_data = background_cache.get_cached_data(config_name, 'device_groups', page=1, page_size=999999)
-        if all_cached_data:
-            items = all_cached_data['items']
-            
-            # Apply legacy filters
-            if name:
-                items = [g for g in items if name.lower() in g.get('name', '').lower()]
-            if parent:
-                items = [g for g in items if g.get('parent-dg') and parent.lower() in g.get('parent-dg', '').lower()]
-            
-            # Apply advanced filters
-            filter_params = parse_filter_params(dict(request.query_params))
-            if filter_params:
-                # Convert dict items to objects for filter compatibility
-                from types import SimpleNamespace
-                items = [SimpleNamespace(**item) for item in items]
-                items = apply_filters(items, filter_params, DEVICE_GROUP_FILTERS)
-                # Convert back to dicts
-                items = [vars(item) for item in items]
-            
-            # Now apply pagination after filtering
-            total_items = len(items)
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            paginated_items = items[start_idx:end_idx]
-            
-            return {
-                "items": paginated_items,
-                "total_items": total_items,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": (total_items + page_size - 1) // page_size,
-                "has_next": end_idx < total_items,
-                "has_previous": page > 1,
-                "from_cache": True
-            }
+        # Check if simple filters are being applied
+        advanced_filters = parse_filter_params(dict(request.query_params))
+        has_simple_filters = (name or parent)
+        
+        if not has_simple_filters and not advanced_filters:
+            # No filters - return paginated cached data directly
+            cached_data = background_cache.get_cached_data(config_name, 'device_groups', page, page_size)
+            if cached_data:
+                return cached_data
+        else:
+            # Simple or advanced filters present - use cached filtering
+            filtered_data = background_cache.get_filtered_cached_data(
+                config_name, 'device_groups',
+                filters={
+                    'name': name,
+                    'parent': parent,
+                    'advanced': advanced_filters  # Include advanced filters
+                },
+                page=page,
+                page_size=page_size
+            )
+            if filtered_data:
+                return filtered_data
     
     # Fall back to parser if no cache available
     parser = get_parser(config_name)

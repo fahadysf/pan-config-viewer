@@ -158,7 +158,12 @@ class FilterProcessor:
         """Apply filter operator to compare values with performance optimizations"""
         # Handle None values
         if value is None:
-            return operator == FilterOperator.NOT_EQUALS and filter_value is not None
+            if filter_value is None:
+                # Both are None
+                return operator == FilterOperator.EQUALS or operator == FilterOperator.LESS_THAN_OR_EQUAL or operator == FilterOperator.GREATER_THAN_OR_EQUAL
+            else:
+                # value is None but filter_value is not
+                return operator == FilterOperator.NOT_EQUALS
         
         # Handle enum values - convert to their string representation
         from enum import Enum
@@ -303,7 +308,9 @@ class FilterProcessor:
             return True
             
         for field_name, filter_value in filters.items():
-            if filter_value is None:
+            # Only skip None filter values if they're not part of explicit equality/inequality operations
+            # This allows filtering for None values when using operators like _eq or _ne
+            if filter_value is None and not (field_name.endswith('_eq') or field_name.endswith('_ne')):
                 continue
             
             # Parse field name to extract operator if present
@@ -357,9 +364,8 @@ def apply_filters(
 ) -> List[Any]:
     """Apply filters to a list of items with optimizations for large datasets"""
     # The filter_params are already parsed, no need to extract
-    active_filters = {
-        k: v for k, v in filter_params.items() if v is not None
-    }
+    # Don't filter out None values here - let matches_filters handle them
+    active_filters = filter_params
     
     if not active_filters:
         return items
@@ -790,6 +796,62 @@ DEVICE_GROUP_FILTERS = FilterDefinition(create_filter_with_aliases({
         FilterOperator.GREATER_THAN_OR_EQUAL,
         FilterOperator.LESS_THAN_OR_EQUAL
     ]),
+    "address_group_count": FilterConfig("address_group_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "service_count": FilterConfig("service_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "service_group_count": FilterConfig("service_group_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "pre_security_rules_count": FilterConfig("pre_security_rules_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "post_security_rules_count": FilterConfig("post_security_rules_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "pre_nat_rules_count": FilterConfig("pre_nat_rules_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
+    "post_nat_rules_count": FilterConfig("post_nat_rules_count", type_=int, operators=[
+        FilterOperator.EQUALS,
+        FilterOperator.NOT_EQUALS,
+        FilterOperator.GREATER_THAN,
+        FilterOperator.LESS_THAN,
+        FilterOperator.GREATER_THAN_OR_EQUAL,
+        FilterOperator.LESS_THAN_OR_EQUAL
+    ]),
     "xpath": FilterConfig("xpath", operators=[
         FilterOperator.EQUALS,
         FilterOperator.CONTAINS,
@@ -847,21 +909,42 @@ GROUP_FILTERS = FilterDefinition(create_filter_with_aliases({
         FilterOperator.CONTAINS,
         FilterOperator.STARTS_WITH
     ]),
-    "parent_device_group": FilterConfig("parent_device_group", operators=[
-        FilterOperator.EQUALS,
-        FilterOperator.NOT_EQUALS,
-        FilterOperator.CONTAINS
-    ]),
-    "parent_template": FilterConfig("parent_template", operators=[
-        FilterOperator.EQUALS,
-        FilterOperator.NOT_EQUALS,
-        FilterOperator.CONTAINS
-    ]),
-    "parent_vsys": FilterConfig("parent_vsys", operators=[
-        FilterOperator.EQUALS,
-        FilterOperator.NOT_EQUALS,
-        FilterOperator.CONTAINS
-    ])
+    "parent_device_group": FilterConfig(
+        "parent_device_group",
+        custom_getter=lambda obj: (
+            getattr(obj, 'parent_device_group', None) or
+            getattr(obj, 'parent-device-group', None)
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS
+        ]
+    ),
+    "parent_template": FilterConfig(
+        "parent_template",
+        custom_getter=lambda obj: (
+            getattr(obj, 'parent_template', None) or
+            getattr(obj, 'parent-template', None)
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS
+        ]
+    ),
+    "parent_vsys": FilterConfig(
+        "parent_vsys", 
+        custom_getter=lambda obj: (
+            getattr(obj, 'parent_vsys', None) or
+            getattr(obj, 'parent-vsys', None)
+        ),
+        operators=[
+            FilterOperator.EQUALS,
+            FilterOperator.NOT_EQUALS,
+            FilterOperator.CONTAINS
+        ]
+    )
 }))
 
 # Security profile filters - comprehensive filtering for all properties

@@ -348,6 +348,12 @@ class BackgroundCacheManager:
                 filtered_items = [item for item in filtered_items 
                                  if item.get('tag') and tag in item.get('tag')]
             
+            # Parent filter (for device groups)
+            if filters.get('parent'):
+                parent = filters['parent'].lower()
+                filtered_items = [item for item in filtered_items 
+                                 if item.get('parent-dg') and parent in item.get('parent-dg', '').lower()]
+            
             # Apply advanced filters if present
             advanced_filters = filters.get('advanced', {})
             if advanced_filters:
@@ -470,6 +476,130 @@ class BackgroundCacheManager:
                                 'udp': obj.protocol.udp
                             },
                             'type': obj.type.value if obj.type else None
+                        }
+                        filtered_items.append(item_dict)
+                
+                elif obj_type in ['address_groups', 'service_groups']:
+                    from models import AddressGroup, ServiceGroup
+                    from filtering import apply_filters, GROUP_FILTERS
+                    
+                    # Convert cached dictionaries to Group objects
+                    group_objects = []
+                    model_class = AddressGroup if obj_type == 'address_groups' else ServiceGroup
+                    logger.debug(f"Reconstructing {len(filtered_items)} items to {model_class.__name__}")
+                    
+                    for item in filtered_items:
+                        try:
+                            # Create Group object from cached data
+                            group_data = {
+                                'name': item.get('name'),
+                                'description': item.get('description'),
+                                'tag': item.get('tag'),
+                                'xpath': item.get('xpath'),
+                                'parent_device_group': item.get('parent-device-group'),
+                                'parent_template': item.get('parent-template'),
+                                'parent_vsys': item.get('parent-vsys')
+                            }
+                            
+                            # Add type-specific fields
+                            if obj_type == 'address_groups':
+                                # Address groups have static and dynamic fields
+                                group_data['static'] = item.get('static')
+                                group_data['dynamic'] = item.get('dynamic')
+                            else:
+                                # Service groups have members field
+                                group_data['members'] = item.get('members')
+                            
+                            group_obj = model_class(**group_data)
+                            group_objects.append(group_obj)
+                        except Exception as e:
+                            # Log the error for debugging
+                            logger.error(f"Failed to reconstruct {model_class.__name__} for {item.get('name')}: {e}")
+                            continue
+                    
+                    # Apply advanced filters to objects
+                    logger.debug(f"Applying filters to {len(group_objects)} reconstructed objects")
+                    filtered_objects = apply_filters(group_objects, advanced_filters, GROUP_FILTERS)
+                    logger.debug(f"Filter result: {len(filtered_objects)} objects matched")
+                    
+                    # Convert back to dictionary format for caching consistency
+                    filtered_items = []
+                    for obj in filtered_objects:
+                        item_dict = {
+                            'name': obj.name,
+                            'description': obj.description,
+                            'tag': obj.tag,
+                            'xpath': obj.xpath,
+                            'parent-device-group': obj.parent_device_group,
+                            'parent-template': obj.parent_template,
+                            'parent-vsys': obj.parent_vsys
+                        }
+                        
+                        # Add type-specific fields
+                        if obj_type == 'address_groups':
+                            item_dict['static'] = obj.static
+                            item_dict['dynamic'] = obj.dynamic
+                        else:
+                            item_dict['members'] = obj.members
+                        
+                        filtered_items.append(item_dict)
+                
+                elif obj_type == 'device_groups':
+                    from models import DeviceGroupSummary
+                    from filtering import apply_filters, DEVICE_GROUP_FILTERS
+                    
+                    # Convert cached dictionaries to DeviceGroupSummary objects
+                    device_group_objects = []
+                    logger.debug(f"Reconstructing {len(filtered_items)} items to DeviceGroupSummary")
+                    
+                    for item in filtered_items:
+                        try:
+                            # Create DeviceGroupSummary object from cached data
+                            dg_data = {
+                                'name': item.get('name'),
+                                'description': item.get('description'),
+                                'parent_dg': item.get('parent-dg'),
+                                'xpath': item.get('xpath'),
+                                'devices_count': item.get('devices_count', 0),
+                                'address_count': item.get('address_count', 0),
+                                'address_group_count': item.get('address-group-count', 0),
+                                'service_count': item.get('service_count', 0),
+                                'service_group_count': item.get('service-group-count', 0),
+                                'pre_security_rules_count': item.get('pre-security-rules-count', 0),
+                                'post_security_rules_count': item.get('post-security-rules-count', 0),
+                                'pre_nat_rules_count': item.get('pre-nat-rules-count', 0),
+                                'post_nat_rules_count': item.get('post-nat-rules-count', 0)
+                            }
+                            
+                            dg_obj = DeviceGroupSummary(**dg_data)
+                            device_group_objects.append(dg_obj)
+                        except Exception as e:
+                            # Log the error for debugging
+                            logger.error(f"Failed to reconstruct DeviceGroupSummary for {item.get('name')}: {e}")
+                            continue
+                    
+                    # Apply advanced filters to objects
+                    logger.debug(f"Applying filters to {len(device_group_objects)} reconstructed objects")
+                    filtered_objects = apply_filters(device_group_objects, advanced_filters, DEVICE_GROUP_FILTERS)
+                    logger.debug(f"Filter result: {len(filtered_objects)} objects matched")
+                    
+                    # Convert back to dictionary format for caching consistency
+                    filtered_items = []
+                    for obj in filtered_objects:
+                        item_dict = {
+                            'name': obj.name,
+                            'description': obj.description,
+                            'parent-dg': obj.parent_dg,
+                            'xpath': obj.xpath,
+                            'devices_count': obj.devices_count,
+                            'address_count': obj.address_count,
+                            'address-group-count': obj.address_group_count,
+                            'service_count': obj.service_count,
+                            'service-group-count': obj.service_group_count,
+                            'pre-security-rules-count': obj.pre_security_rules_count,
+                            'post-security-rules-count': obj.post_security_rules_count,
+                            'pre-nat-rules-count': obj.pre_nat_rules_count,
+                            'post-nat-rules-count': obj.post_nat_rules_count
                         }
                         filtered_items.append(item_dict)
             
