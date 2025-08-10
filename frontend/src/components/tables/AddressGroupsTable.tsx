@@ -208,6 +208,50 @@ export function AddressGroupsTable() {
       },
     },
     {
+      accessorKey: 'tag',
+      header: ({ column }) => (
+        <FilterableColumnHeader
+          column={column}
+          title="Tags"
+          field="tag"
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          filterOperators={[
+            { value: 'contains', label: 'Contains', requiresValue: true, applicableTypes: ['text'] },
+            { value: 'in', label: 'In List', requiresValue: true, applicableTypes: ['text'] },
+            { value: 'not_in', label: 'Not In List', requiresValue: true, applicableTypes: ['text'] },
+          ]}
+        />
+      ),
+      cell: ({ row }) => {
+        const group = row.original
+        const tags = group.tag || []
+        return (
+          <div className="max-w-xs">
+            {tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {tags.slice(0, 2).map((tag, index) => (
+                  <span 
+                    key={index}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {tags.length > 2 && (
+                  <span className="text-xs text-gray-500">
+                    +{tags.length - 2} more
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-400 text-sm italic">No tags</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {

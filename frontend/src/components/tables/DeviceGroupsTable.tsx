@@ -86,7 +86,7 @@ export function DeviceGroupsTable() {
         <FilterableColumnHeader
           column={column}
           title="Parent DG"
-          field="parent-dg"
+          field="parent_dg"
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -131,13 +131,13 @@ export function DeviceGroupsTable() {
         <FilterableColumnHeader
           column={column}
           title="Objects"
-          field="address_count,service_count"
+          field="address_count"
           filters={filters}
           onFiltersChange={handleFiltersChange}
           filterOperators={[
-            { value: 'gte', label: 'Count >= ', requiresValue: true, applicableTypes: ['number'] },
-            { value: 'lte', label: 'Count <= ', requiresValue: true, applicableTypes: ['number'] },
-            { value: 'eq', label: 'Count = ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'gte', label: 'Address Count >= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'lte', label: 'Address Count <= ', requiresValue: true, applicableTypes: ['number'] },
+            { value: 'eq', label: 'Address Count = ', requiresValue: true, applicableTypes: ['number'] },
           ]}
         />
       ),
@@ -205,7 +205,7 @@ export function DeviceGroupsTable() {
         <FilterableColumnHeader
           column={column}
           title="Location"
-          field="parent-device-group,parent-template,parent-vsys"
+          field="xpath"
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />

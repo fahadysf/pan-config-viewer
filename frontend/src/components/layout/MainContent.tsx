@@ -1,11 +1,11 @@
 import { useConfigStore } from '@/stores/configStore'
 import { DeferredAddressesTable } from '@/components/tables/DeferredAddressesTable'
-import { AddressGroupsTable } from '@/components/tables/AddressGroupsTable'
-import { ServicesTable } from '@/components/tables/ServicesTable'
-import { ServiceGroupsTable } from '@/components/tables/ServiceGroupsTable'
-import { DeviceGroupsTable } from '@/components/tables/DeviceGroupsTable'
-import { SecurityPoliciesTable } from '@/components/tables/SecurityPoliciesTable'
-import { TemplatesTable } from '@/components/tables/TemplatesTable'
+import { DeferredAddressGroupsTable } from '@/components/tables/DeferredAddressGroupsTable'
+import { DeferredServicesTable } from '@/components/tables/DeferredServicesTable'
+import { DeferredServiceGroupsTable } from '@/components/tables/DeferredServiceGroupsTable'
+import { DeferredDeviceGroupsTable } from '@/components/tables/DeferredDeviceGroupsTable'
+import { DeferredSecurityPoliciesTable } from '@/components/tables/DeferredSecurityPoliciesTable'
+import { DeferredTemplatesTable } from '@/components/tables/DeferredTemplatesTable'
 import { SecurityProfilesTable } from '@/components/tables/SecurityProfilesTable'
 
 export function MainContent() {
@@ -24,17 +24,17 @@ export function MainContent() {
       case 'addresses':
         return <DeferredAddressesTable key={key} />
       case 'address-groups':
-        return <AddressGroupsTable key={key} />
+        return <DeferredAddressGroupsTable key={key} />
       case 'services':
-        return <ServicesTable key={key} />
+        return <DeferredServicesTable key={key} />
       case 'service-groups':
-        return <ServiceGroupsTable key={key} />
+        return <DeferredServiceGroupsTable key={key} />
       case 'device-groups':
-        return <DeviceGroupsTable key={key} />
+        return <DeferredDeviceGroupsTable key={key} />
       case 'security-policies':
-        return <SecurityPoliciesTable key={key} />
+        return <DeferredSecurityPoliciesTable key={key} />
       case 'templates':
-        return <TemplatesTable key={key} />
+        return <DeferredTemplatesTable key={key} />
       case 'security-profile-vulnerability':
         return <SecurityProfilesTable key={key} type="vulnerability" />
       case 'security-profile-url-filtering':
