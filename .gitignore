@@ -48,6 +48,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+coverage/
 
 # Translations
 *.mo
@@ -155,3 +156,7 @@ logs/
 .env.development
 .env.test
 .env.production
+
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
