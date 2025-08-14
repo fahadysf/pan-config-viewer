@@ -101,9 +101,8 @@ export function AddressesTable() {
   
   // Memoize handlers to prevent column recreation
   const handleFiltersChange = useCallback((newFilters: ColumnFilter[]) => {
-    // Immediately clear data and show loading state
+    // Don't clear data immediately - let the loading state show over existing data
     setIsTransitioning(true)
-    setDisplayData([])
     setPagination({ pageIndex: 0, pageSize: pagination.pageSize }) // Reset to first page
     handleFiltersChangeDebounced(newFilters)
   }, [pagination.pageSize, handleFiltersChangeDebounced])
@@ -113,8 +112,8 @@ export function AddressesTable() {
   }, [])
 
   const handlePaginationChange = useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    // Don't clear data immediately - let the loading state show over existing data
     setIsTransitioning(true)
-    setDisplayData([])
     setPagination(newPagination)
   }, [])
 

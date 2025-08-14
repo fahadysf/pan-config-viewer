@@ -58,7 +58,7 @@ export function AddressGroupsTable() {
   // Handle filter changes with immediate UI feedback
   const handleFiltersChange = useCallback((newFilters: ColumnFilter[]) => {
     setIsTransitioning(true)
-    setDisplayData([]) // Immediately clear data
+    // Don't clear data immediately - let the loading state show over existing data
     setPagination({ pageIndex: 0, pageSize: pagination.pageSize })
     setFilters(newFilters)
     handleFiltersChangeBase(newFilters)
@@ -293,7 +293,10 @@ export function AddressGroupsTable() {
           data={displayData}
           pageCount={data?.total_pages}
           pagination={pagination}
-          onPaginationChange={setPagination}
+          onPaginationChange={(newPagination) => {
+            setIsTransitioning(true)
+            setPagination(newPagination)
+          }}
           loading={isLoading || isTransitioning || isFetching}
         />
       </div>
