@@ -139,7 +139,8 @@ nav:
     
   - Filtering Guide:
     - Overview: guides/filtering/index.md
-    - All Operators: guides/filtering/operators.md
+    - Filter Operators: guides/filtering/operators.md
+    - Endpoint Filters: guides/filtering/endpoints.md
     
   - API Endpoints:
     - Address Objects: api/endpoints/addresses.md

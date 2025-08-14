@@ -12,25 +12,24 @@ The filtering system supports:
 - **Multi-field filtering** with AND logic
 - **Consistent behavior** across all endpoints
 
-## Quick Start
+## Filtering Approaches
 
-### Basic Filter
-```http
-GET /api/v1/configs/{config}/addresses?filter.name=server
-```
-This uses the default `contains` operator to find addresses with "server" in the name.
+The API supports two complementary filtering approaches:
 
-### Explicit Operator
+### 1. Basic Filters
+Simple query parameters for common filtering needs:
 ```http
-GET /api/v1/configs/{config}/addresses?filter.name.equals=web-server-01
+GET /api/v1/configs/{config}/addresses?name=server&tag=production
 ```
-This finds an address with the exact name "web-server-01".
 
-### Multiple Filters
+### 2. Advanced Filters
+Powerful `filter.property.operator=value` syntax for precise filtering:
 ```http
-GET /api/v1/configs/{config}/addresses?filter.type.equals=fqdn&filter.tag.in=production
+GET /api/v1/configs/{config}/addresses?filter.ip.starts_with=10.&filter.tag.in=production
 ```
-Multiple filters are combined with AND logic.
+
+!!! info "Filter Logic"
+    All filters use AND logic - objects must match ALL specified filter conditions.
 
 ## Filter Syntax
 
@@ -49,246 +48,73 @@ filter.<field>.<operator>=<value>
 
 | Syntax | Description |
 |--------|-------------|
-| `filter.name=web` | Name contains "web" (default operator) |
+| `filter.name=server` | Name contains "server" (default operator) |
 | `filter.name.equals=web-01` | Name exactly equals "web-01" |
-| `filter.ip.starts_with=10.` | IP starts with "10." |
 | `filter.port.gt=8000` | Port greater than 8000 |
 | `filter.tag.in=production` | Has "production" tag |
 
-## Supported Operators
+## Quick Start Examples
 
-### Text Operators
-
-| Operator | Aliases | Description | Example |
-|----------|---------|-------------|---------|
-| `contains` | - | Substring match (default) | `filter.name.contains=server` |
-| `eq` | `equals` | Exact match | `filter.name.eq=web-01` |
-| `ne` | `not_equals` | Not equal | `filter.protocol.ne=udp` |
-| `starts_with` | - | Starts with prefix | `filter.ip.starts_with=192.168.` |
-| `ends_with` | - | Ends with suffix | `filter.fqdn.ends_with=.com` |
-| `not_contains` | - | Doesn't contain | `filter.description.not_contains=test` |
-| `regex` | - | Regular expression | `filter.name.regex=^srv-\d+$` |
-
-### Numeric Operators
-
-| Operator | Aliases | Description | Example |
-|----------|---------|-------------|---------|
-| `gt` | `greater_than` | Greater than | `filter.port.gt=1024` |
-| `lt` | `less_than` | Less than | `filter.count.lt=100` |
-| `gte` | `greater_than_or_equal` | Greater or equal | `filter.port.gte=8080` |
-| `lte` | `less_than_or_equal` | Less or equal | `filter.port.lte=9000` |
-
-### List Operators
-
-| Operator | Aliases | Description | Example |
-|----------|---------|-------------|---------|
-| `in` | - | Value in list | `filter.tag.in=production,staging` |
-| `not_in` | - | Value not in list | `filter.zone.not_in=untrust` |
-
-### Boolean Operators
-
-| Operator | Aliases | Description | Example |
-|----------|---------|-------------|---------|
-| `eq` | `equals` | Boolean equals | `filter.disabled.eq=true` |
-| `ne` | `not_equals` | Boolean not equals | `filter.log_end.ne=false` |
-
-## Field-Specific Filtering
-
-Different object types support different fields for filtering. Here's what you can filter on for each major object type:
-
-### Address Objects
-
-| Field | Type | Operators | Description |
-|-------|------|-----------|-------------|
-| `name` | string | All text operators | Object name |
-| `ip` | string | All text operators | IP address (alias for ip_netmask) |
-| `ip_netmask` | string | Text operators | IP with netmask |
-| `ip_range` | string | Text operators | IP range |
-| `fqdn` | string | Text operators | Fully qualified domain name |
-| `type` | enum | `eq`, `ne` | Address type (fqdn/ip-netmask/ip-range) |
-| `tag` | array | `in`, `not_in`, `contains` | Associated tags |
-| `description` | string | All text operators | Description text |
-| `parent_device_group` | string | Text operators | Device group location |
-
-### Service Objects
-
-| Field | Type | Operators | Description |
-|-------|------|-----------|-------------|
-| `name` | string | All text operators | Service name |
-| `protocol` | enum | `eq`, `ne` | Protocol (tcp/udp) |
-| `port` | string/int | All operators | Port number or range |
-| `source_port` | string | Text operators | Source port |
-| `tag` | array | `in`, `not_in`, `contains` | Associated tags |
-| `description` | string | All text operators | Description text |
-
-### Security Rules
-
-| Field | Type | Operators | Description |
-|-------|------|-----------|-------------|
-| `name` | string | All text operators | Rule name |
-| `uuid` | string | `eq`, `ne` | Rule UUID |
-| `source` | array | List operators | Source addresses |
-| `destination` | array | List operators | Destination addresses |
-| `source_zone` | array | List operators | Source zones |
-| `destination_zone` | array | List operators | Destination zones |
-| `application` | array | List operators | Applications |
-| `service` | array | List operators | Services |
-| `action` | enum | `eq`, `ne` | Action (allow/deny/drop) |
-| `disabled` | bool | `eq`, `ne` | Rule state |
-| `log_start` | bool | `eq`, `ne` | Log at session start |
-| `log_end` | bool | `eq`, `ne` | Log at session end |
-
-### Device Groups
-
-| Field | Type | Operators | Description |
-|-------|------|-----------|-------------|
-| `name` | string | All text operators | Device group name |
-| `parent` | string | Text operators | Parent device group |
-| `description` | string | All text operators | Description |
-| `devices_count` | int | Numeric operators | Number of devices |
-| `address_count` | int | Numeric operators | Number of addresses |
-| `service_count` | int | Numeric operators | Number of services |
-
-## Advanced Filtering Examples
-
-### Complex Security Rule Query
-Find high-risk allow rules (any-any with no logging):
-```http
-GET /api/v1/configs/panorama/rules/security?
-  filter.source.in=any&
-  filter.destination.in=any&
-  filter.service.in=any&
-  filter.action.equals=allow&
-  filter.log_end.equals=false
+### Find addresses in a specific network
+```bash
+GET /api/v1/configs/panorama/addresses?filter.ip.starts_with=192.168.
 ```
 
-### Address Range Query
-Find all addresses in specific subnets:
-```http
-GET /api/v1/configs/panorama/addresses?
-  filter.ip.starts_with=10.&
-  filter.ip.not_contains=10.99&
-  filter.type.equals=ip-netmask
+### Find TCP services on high ports
+```bash
+GET /api/v1/configs/panorama/services?filter.protocol.equals=tcp&filter.port.gt=1024
 ```
 
-### Service Port Range Query
-Find all high-port TCP services:
-```http
-GET /api/v1/configs/panorama/services?
-  filter.protocol.equals=tcp&
-  filter.port.gte=8000&
-  filter.port.lte=9000
+### Find security rules from DMZ
+```bash
+GET /api/v1/configs/panorama/rules/security?filter.source_zone.in=DMZ&filter.action.equals=allow
 ```
 
-### Tagged Object Query
-Find production servers in DMZ:
-```http
-GET /api/v1/configs/panorama/addresses?
-  filter.tag.in=production&
-  filter.description.contains=DMZ&
-  filter.type.equals=ip-netmask
-```
+## Endpoint Availability
 
-### NAT Rule Analysis
-Find NAT rules with source translation:
-```http
-GET /api/v1/configs/panorama/rules/nat?
-  filter.source.starts_with=192.168.&
-  filter.source_translation.exists=true&
-  filter.disabled.equals=false
-```
+!!! success "Universal Support"
+    Filtering is available on ALL endpoints that return lists of objects, including:
+    
+    - Shared objects endpoints (e.g., `/addresses`, `/services`)
+    - Device-group specific endpoints (e.g., `/device-groups/{name}/addresses`)
+    - Template specific endpoints (e.g., `/templates/{name}/addresses`)
+    - All other collection endpoints
 
-## Device-Group Specific Filtering
-
-All filtering features work identically for device-group specific endpoints:
-
-```http
-# Shared objects
-GET /api/v1/configs/panorama/addresses?filter.name.contains=server
-
-# Device-group specific objects
-GET /api/v1/configs/panorama/device-groups/DMZ-DG/addresses?filter.name.contains=server
-
-# Template specific objects
-GET /api/v1/configs/panorama/templates/Branch-Template/addresses?filter.name.contains=server
-```
+The same filtering syntax and operators work consistently across all endpoints.
 
 ## Performance Considerations
 
-### Best Practices
+1. **Use specific filters**: More specific filters reduce the result set earlier
+2. **Combine with pagination**: Use filtering with pagination for large datasets
+3. **Use indexed fields**: Filters on `name`, `uuid`, and `type` are typically faster
+4. **Avoid complex regex**: Simple string operations are faster than regex patterns
 
-1. **Use specific filters first** - More selective filters reduce the dataset early
-2. **Combine with pagination** - Use `limit` and `offset` with filters
-3. **Use indexed fields** - `name`, `uuid`, and `type` are typically faster
-4. **Avoid complex regex** - Simple string operations are more efficient
+## Filter Precedence
 
-### Query Optimization
+When multiple filters are specified:
 
-```http
-# Good: Specific filters first
-filter.type.equals=fqdn&filter.name.contains=mail
+1. All filters must match (AND logic)
+2. Basic query parameters are processed first
+3. Advanced filters are applied after basic filters
+4. Pagination is applied last
 
-# Less optimal: Generic filter first
-filter.name.contains=mail&filter.type.equals=fqdn
-```
+## Error Handling
 
-## Filter Validation
+- **Invalid filters**: Silently ignored, no error returned
+- **No matches**: Returns empty result set
+- **Invalid syntax**: Returns HTTP 400
+- **Non-existent endpoint**: Returns HTTP 404
 
-### Invalid Filters
-Invalid filter parameters are silently ignored. The API will:
-- Return empty result set if no objects match
-- Return HTTP 400 for invalid operator syntax
-- Return HTTP 404 for non-existent endpoints
+## Best Practices
 
-### Type Coercion
-The API automatically handles type conversion:
-- Numeric strings are converted for numeric operators
-- Boolean strings ("true"/"false") are converted for boolean operators
-- Lists can be comma-separated strings or JSON arrays
-
-## Common Patterns
-
-### Finding Unused Objects
-```http
-# Find address objects not used in any rules
-GET /api/v1/configs/panorama/addresses?filter.used_in.equals=0
-```
-
-### Compliance Checks
-```http
-# Find non-compliant rules (example: no logging)
-GET /api/v1/configs/panorama/rules/security?
-  filter.log_end.equals=false&
-  filter.action.equals=allow
-```
-
-### Change Impact Analysis
-```http
-# Find all rules affected by an address change
-GET /api/v1/configs/panorama/rules/security?
-  filter.source.contains=old-server-01
-```
-
-## Troubleshooting
-
-### No Results Returned
-- Check field names are correct (use hyphenated or underscore)
-- Verify operator is valid for the field type
-- Ensure value format matches expected type
-
-### Too Many Results
-- Add more specific filters
-- Use pagination to handle large result sets
-- Consider using exact match instead of contains
-
-### Performance Issues
-- Reduce the number of complex regex filters
-- Use more selective filters first
-- Enable caching if available
+1. **Start broad, then narrow**: Begin with basic filters, add advanced filters as needed
+2. **Use operator shortcuts**: Omit `.contains` as it's the default operator
+3. **Test incrementally**: Add one filter at a time when building complex queries
+4. **Use appropriate operators**: Use `starts_with` for IP prefixes, `ends_with` for domains
+5. **Combine location and property filters**: Filter by device group AND object properties
 
 ## Next Steps
 
-- [Explore all operators in detail](operators.md)
-- [Learn about filter syntax](syntax.md)
-- [See advanced filtering techniques](advanced.md)
-- [Understand performance optimization](performance.md)
+- [View all available operators →](operators.md)
+- [See endpoint-specific filters →](endpoints.md)
+- [Explore complex filtering examples →](../../examples/complex-filters.md)
