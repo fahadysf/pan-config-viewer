@@ -73,7 +73,7 @@ python tests/test_basic.py || {
 
 # Run tests with the test configuration
 echo -e "\n📋 Running tests with test configuration..."
-cd /Users/fahad/code/pan-config-viewer-simple
+cd "$(dirname "$0")/.."
 CONFIG_FILES_PATH="$(pwd)/tests/test_configs" pytest tests/test_api.py -v --tb=short --continue-on-collection-errors -x || TEST_FAILED=1
 
 # Run tests with the real configuration
@@ -99,8 +99,8 @@ fi
 
 echo -e "\n📊 Coverage report:"
 echo "- Terminal output above"
-echo "- HTML report: htmlcov/index.html"
-echo "- XML report: coverage.xml"
+echo "- HTML report: tests/htmlcov/index.html"
+echo "- XML report: tests/coverage.xml"
 
 # Show container status
 echo -e "\n🐳 Container status:"

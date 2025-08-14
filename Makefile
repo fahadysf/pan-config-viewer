@@ -20,13 +20,13 @@ stop:  ## Stop Docker containers
 	docker-compose down
 
 test-local:  ## Run tests locally (no Docker)
-	./run_tests_local.sh
+	./tests/run_tests_local.sh
 
 test-docker:  ## Run tests with Docker
-	./run_tests.sh
+	./tests/run_tests.sh
 
 test-full:  ## Run full test suite with error handling
-	./run_tests_full.sh
+	./tests/run_tests_full.sh
 
 test: test-local  ## Run tests (alias for test-local)
 
@@ -39,8 +39,9 @@ test-validate:  ## Run simple validation tests (API must be running)
 test-coverage:  ## Run tests with coverage report
 	pytest --cov=main --cov=parser --cov=models \
 	       --cov-report=term-missing \
-	       --cov-report=html
-	@echo "Coverage report: htmlcov/index.html"
+	       --cov-report=html:tests/htmlcov \
+	       --cov-report=xml:tests/coverage.xml
+	@echo "Coverage report: tests/htmlcov/index.html"
 
 lint:  ## Run linting
 	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -49,7 +50,7 @@ lint:  ## Run linting
 clean:  ## Clean up generated files
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name '*.pyc' -delete
-	rm -rf htmlcov .coverage coverage.xml .pytest_cache
+	rm -rf tests/htmlcov tests/coverage_reports tests/coverage.xml .coverage .pytest_cache
 	docker-compose down -v
 
 logs:  ## Show Docker logs
