@@ -101,7 +101,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </button>
             
             {isOpen && showSecurityProfiles && (
-              <ul className="ml-8 mt-2 space-y-1">
+              <ul className="ml-6 mt-1 space-y-0.5">
                 {securityProfiles.map((profile) => {
                   const isActive = activeSection === `security-profile-${profile.id}`
                   return (
@@ -109,7 +109,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                       <button
                         onClick={() => setActiveSection(`security-profile-${profile.id}`)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded text-sm transition-colors",
+                          "w-full text-left px-2 py-1 rounded text-xs transition-colors",
                           isActive ? "bg-blue-600 text-white" : "hover:bg-gray-800 text-gray-400"
                         )}
                       >

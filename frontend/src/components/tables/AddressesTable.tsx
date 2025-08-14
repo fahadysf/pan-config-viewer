@@ -58,7 +58,7 @@ const AddressValueCell = React.memo(({ address }: { address: Address }) => {
   }
   
   return (
-    <code className={`text-sm px-2 py-1 rounded ${
+    <code className={`text-xs px-1 py-0.5 rounded ${
       value === 'N/A' 
         ? 'bg-red-100 text-red-700' 
         : 'bg-gray-100 text-gray-800'
@@ -76,7 +76,7 @@ const AddressLocationCell = React.memo(({ address }: { address: Address }) => {
                   address['parent-template'] || 
                   address['parent-vsys'] || 
                   'Shared'
-  return <span className="text-sm">{location}</span>
+  return <span className="text-xs">{location}</span>
 })
 
 AddressLocationCell.displayName = 'AddressLocationCell'
@@ -192,7 +192,7 @@ export function AddressesTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
+        <div className="font-medium text-xs">{row.getValue('name')}</div>
       ),
     },
     {
@@ -211,7 +211,7 @@ export function AddressesTable() {
         />
       ),
       cell: ({ row }) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {row.getValue('type')}
         </span>
       ),
@@ -262,9 +262,9 @@ export function AddressesTable() {
       cell: ({ row }) => {
         const description = row.getValue('description') as string
         return description ? (
-          <span className="text-gray-600 text-sm">{description}</span>
+          <span className="text-gray-600 text-xs">{description}</span>
         ) : (
-          <span className="text-gray-400 text-sm italic">No description</span>
+          <span className="text-gray-400 text-xs italic">No description</span>
         )
       },
     },
@@ -277,15 +277,15 @@ export function AddressesTable() {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" className="h-6 w-6 p-0">
                 <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleDetailView(address)}>
-                <Eye className="mr-2 h-4 w-4" />
+                <Eye className="mr-1 h-3 w-3" />
                 View details
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -298,13 +298,13 @@ export function AddressesTable() {
   // Show loading spinner when switching configs or initial load
   if (isLoading && isInitialLoad && !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex flex-col items-center justify-center min-h-[200px] space-y-2">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-xs font-medium text-gray-900">
             Loading addresses...
           </p>
-          <p className="text-xs text-gray-500 mt-1">This may take a moment for large configurations</p>
+          <p className="text-xs text-gray-500">This may take a moment for large configurations</p>
         </div>
       </div>
     )
@@ -313,9 +313,9 @@ export function AddressesTable() {
   // Show error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-[200px] space-y-2">
         <div className="text-center">
-          <p className="text-sm font-medium text-red-600">Error loading addresses</p>
+          <p className="text-xs font-medium text-red-600">Error loading addresses</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error).message}</p>
         </div>
       </div>
@@ -325,10 +325,10 @@ export function AddressesTable() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Addresses</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-lg font-bold tracking-tight">Addresses</h2>
+          <p className="text-xs text-muted-foreground">
             Manage network addresses and IP configurations
           </p>
         </div>

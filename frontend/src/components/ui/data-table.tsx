@@ -100,13 +100,13 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-2">
       <div className="flex items-center justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              <Settings2 className="mr-2 h-4 w-4" />
-              View <ChevronDown className="ml-2 h-4 w-4" />
+            <Button variant="outline" size="sm" className="ml-auto h-7 text-xs">
+              <Settings2 className="mr-1 h-3 w-3" />
+              View <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -153,17 +153,17 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {loading || data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-64 text-center">
+                <TableCell colSpan={columns.length} className="h-32 text-center">
                   {loading ? (
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Loading data...</p>
-                        <p className="text-xs text-gray-500 mt-1">Applying filters and fetching results</p>
+                        <p className="text-xs font-medium text-gray-900">Loading data...</p>
+                        <p className="text-xs text-gray-500">Applying filters and fetching results</p>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-gray-500">No results found</div>
+                    <div className="text-xs text-gray-500">No results found</div>
                   )}
                 </TableCell>
               </TableRow>
@@ -184,14 +184,14 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
+      <div className="flex items-center justify-between space-x-2 py-2">
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <span className="text-xs text-muted-foreground">Rows per page:</span>
           <Select
             value={pagination?.pageSize?.toString() ?? "100"}
             onValueChange={handlePageSizeChange}
           >
-            <SelectTrigger className="w-16 h-8">
+            <SelectTrigger className="w-14 h-7 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -204,7 +204,7 @@ export function DataTable<TData, TValue>({
           </Select>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             Showing {((pagination?.pageIndex ?? 0) * (pagination?.pageSize ?? 100)) + 1} to{" "}
             {Math.min(
               ((pagination?.pageIndex ?? 0) + 1) * (pagination?.pageSize ?? 100),
@@ -223,7 +223,7 @@ export function DataTable<TData, TValue>({
             Previous
           </Button>
           <div className="flex items-center gap-1">
-            <span className="text-sm">
+            <span className="text-xs">
               Page {(pagination?.pageIndex ?? 0) + 1} of {pageCount ?? 1}
             </span>
           </div>

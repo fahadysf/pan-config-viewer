@@ -54,6 +54,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-sm;
   }
+  
+  /* Reduce default font sizes */
+  h1 { @apply text-xl; }
+  h2 { @apply text-lg; }
+  h3 { @apply text-base; }
+  p { @apply text-sm; }
+  
+  /* Make tables more compact */
+  table { @apply text-xs; }
 }
