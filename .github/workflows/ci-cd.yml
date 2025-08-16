@@ -207,12 +207,12 @@ jobs:
       with:
         context: .
         push: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
-        load: true
+        load: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') }}
         tags: |
           pan-config-viewer:${{ needs.build.outputs.version }}
           pan-config-viewer:latest
-          ${{ ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') && 'docker.io/fahadysf/pan-config-viewer:dev' || '' }}
-          ${{ ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') && format('docker.io/fahadysf/pan-config-viewer:{0}', github.sha) || '' }}
+          docker.io/fahadysf/pan-config-viewer:dev
+          docker.io/fahadysf/pan-config-viewer:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
