@@ -200,6 +200,7 @@ jobs:
       with:
         context: .
         push: false
+        load: true
         tags: |
           pan-config-viewer:${{ needs.build.outputs.version }}
           pan-config-viewer:latest
