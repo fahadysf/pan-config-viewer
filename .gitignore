@@ -156,3 +156,6 @@ logs/
 .env.development
 .env.test
 .env.production
+
+# GitHub secrets setup script
+setup-github-secrets.sh
