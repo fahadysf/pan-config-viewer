@@ -202,7 +202,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Build Docker image
+    - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -211,14 +211,25 @@ jobs:
         tags: |
           pan-config-viewer:${{ needs.build.outputs.version }}
           pan-config-viewer:latest
-          ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('fahadysf/pan-config-viewer:{0}', needs.build.outputs.version) || '' }}
-          ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'fahadysf/pan-config-viewer:latest' || '' }}
+          ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'docker.io/fahadysf/pan-config-viewer:dev' || '' }}
+          ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('docker.io/fahadysf/pan-config-viewer:{0}', github.sha) || '' }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
     - name: Save Docker image
       run: |
         docker save pan-config-viewer:${{ needs.build.outputs.version }} | gzip > pan-config-viewer-${{ needs.build.outputs.version }}.tar.gz
+    
+    - name: Display Docker Hub push status
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        echo "✅ Docker image pushed to Docker Hub:"
+        echo "  - docker.io/fahadysf/pan-config-viewer:dev"
+        echo "  - docker.io/fahadysf/pan-config-viewer:${{ github.sha }}"
+        echo ""
+        echo "Pull commands:"
+        echo "  docker pull fahadysf/pan-config-viewer:dev"
+        echo "  docker pull fahadysf/pan-config-viewer:${{ github.sha }}"
     
     - name: Upload Docker image
       uses: actions/upload-artifact@v4
@@ -293,7 +304,13 @@ jobs:
           
           ### Installation
           
-          #### Docker
+          #### Docker Hub
+          ```bash
+          docker pull fahadysf/pan-config-viewer:${{ github.sha }}
+          docker run -p 8000:8000 -v /path/to/configs:/app/config-files fahadysf/pan-config-viewer:${{ github.sha }}
+          ```
+          
+          #### Docker (from artifact)
           ```bash
           docker load < pan-config-viewer-${{ github.ref_name }}.tar.gz
           docker run -p 8000:8000 pan-config-viewer:${{ github.ref_name }}
