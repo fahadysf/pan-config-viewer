@@ -216,7 +216,7 @@ jobs:
         cache-to: type=gha,mode=max
     
     - name: Build Docker image (no push)
-      if: !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main')
+      if: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') }}
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -229,7 +229,7 @@ jobs:
         cache-to: type=gha,mode=max
     
     - name: Save Docker image
-      if: !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main')
+      if: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') }}
       run: |
         docker save pan-config-viewer:${{ needs.build.outputs.version }} | gzip > pan-config-viewer-${{ needs.build.outputs.version }}.tar.gz
     
