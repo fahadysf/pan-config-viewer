@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Frontend Test</title>
+</head>
+<body>
+    <h1>Testing Frontend</h1>
+    <iframe src="http://localhost:8000/" width="100%" height="600" style="border: 1px solid #ccc;"></iframe>
+    
+    <h2>API Test</h2>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="api-result"></pre>
+    
+    <script>
+        async function testAPI() {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/configs');
+                const data = await response.json();
+                document.getElementById('api-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('api-result').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Test on load
+        testAPI();
+    </script>
+</body>
+</html>
