@@ -204,20 +204,32 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
     
     - name: Build and push Docker image
+      if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
       uses: docker/build-push-action@v5
       with:
         context: .
-        push: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
-        load: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') }}
+        push: true
         tags: |
-          pan-config-viewer:${{ needs.build.outputs.version }}
-          pan-config-viewer:latest
           docker.io/fahadysf/pan-config-viewer:dev
           docker.io/fahadysf/pan-config-viewer:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
+    - name: Build Docker image (no push)
+      if: !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main')
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        load: true
+        tags: |
+          pan-config-viewer:${{ needs.build.outputs.version }}
+          pan-config-viewer:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
     - name: Save Docker image
+      if: !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main')
       run: |
         docker save pan-config-viewer:${{ needs.build.outputs.version }} | gzip > pan-config-viewer-${{ needs.build.outputs.version }}.tar.gz
     
