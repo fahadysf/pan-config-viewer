@@ -49,6 +49,11 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+junit.xml
+test-results/
+test-report.xml
+*.test.js.snap
+*.test.ts.snap
 
 # Translations
 *.mo
@@ -157,5 +162,25 @@ logs/
 .env.test
 .env.production
 
+# Node.js / Frontend
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+frontend/build/
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
+*.tsbuildinfo
+
 # GitHub secrets setup script
 setup-github-secrets.sh
+PROTECT_BRANCH.md
+
+# Cache and debug files
+cache/
+debug_logs/
+.claude/
