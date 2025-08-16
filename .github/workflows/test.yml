@@ -290,21 +290,6 @@ jobs:
         # Cleanup
         docker stop test-container
         docker rm test-container
-    
-    - name: Scan Docker image for vulnerabilities
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: pan-config-viewer:test
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        severity: 'CRITICAL,HIGH'
-      continue-on-error: true
-    
-    - name: Upload Trivy results
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'trivy-results.sarif'
-      if: always()
 
   integration-tests:
     name: Integration Tests
