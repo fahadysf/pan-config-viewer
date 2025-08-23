@@ -63,19 +63,29 @@ export interface ServiceGroup {
 }
 
 export interface SecurityPolicy {
-  order: number
+  order?: number
   name: string
-  rule_type: string
-  source_zones: string[]
-  source_addresses: string[]
-  destination_zones: string[]
-  destination_addresses: string[]
-  applications: string[]
-  services: string[]
+  uuid?: string
+  rule_type?: string
+  from: string[]  // Source zones
+  to: string[]  // Destination zones
+  source: string[]  // Source addresses
+  destination: string[]  // Destination addresses
+  source_user?: string[]
+  category?: string[]
+  application: string[]
+  service: string[]
   action: string
+  profile_setting?: Record<string, any>
   log_setting?: string
-  profile_settings?: Record<string, any>
+  log_start?: boolean
+  log_end?: boolean
+  disabled?: boolean
   description?: string
+  tag?: string[]
+  // Runtime metadata
+  device_group?: string
+  rulebase_location?: string
 }
 
 export interface DeviceGroup {
