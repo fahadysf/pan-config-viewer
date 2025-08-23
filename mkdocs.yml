@@ -137,14 +137,36 @@ nav:
   
   - Quick Start: quickstart/index.md
     
-  - Filtering Guide:
-    - Overview: guides/filtering/index.md
-    - All Operators: guides/filtering/operators.md
+  - API Documentation:
+    - Overview: guides/api/overview.md
+    - Filtering Guide: guides/api/filtering-guide.md
+    - Endpoints:
+      - Address Objects: api/endpoints/addresses.md
+      - Service Objects: api/endpoints/services.md
+      - Security Rules: api/endpoints/security-rules.md
     
-  - API Endpoints:
-    - Address Objects: api/endpoints/addresses.md
-    - Service Objects: api/endpoints/services.md
-    - Security Rules: api/endpoints/security-rules.md
+  - Guides:
+    - Filtering:
+      - Overview: guides/filtering/index.md
+      - All Operators: guides/filtering/operators.md
+      - Detailed Guide: guides/filtering/detailed-guide.md
+    - Frontend Viewer: guides/frontend-viewer.md
+    - Testing:
+      - Overview: guides/testing/overview.md
+      - Integrated Testing: guides/testing/integrated-testing.md
   
+  - Deployment:
+    - Docker Setup: deployment/docker-setup.md
+    - DockerHub: deployment/dockerhub.md
+    
+  - Development:
+    - Test Architecture: development/test-architecture.md
+    - Filtering Implementation: development/filtering-implementation.md
+    - Column Filtering: development/column-filtering.md
+    - Branch Protection: development/branch-protection.md
+    
+  - Reference:
+    - Known Issues: reference/known-issues.md
+    
   - Examples:
     - Complex Filters: examples/complex-filters.md
