@@ -1367,6 +1367,14 @@ async def get_device_groups(
     - filter[address_count][lt]=100
     - filter[description][contains]=branch
     """
+    # Check if this is a firewall config - device groups don't exist in firewall configs
+    parser = get_parser(config_name)
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
+    
     # Check if we have cached data first
     if background_cache.is_cached(config_name, 'device_groups'):
         # Check if simple filters are being applied
@@ -1423,6 +1431,13 @@ async def get_device_group(
 ):
     """Get a specific device group by name"""
     parser = get_parser(config_name)
+    
+    # Check if this is a firewall config
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
     groups = parser.get_device_groups()
     for group in groups:
         if group.name == group_name:
@@ -1445,6 +1460,14 @@ async def get_device_group_addresses(
 ):
     """Get addresses for a specific device group with pagination"""
     parser = get_parser(config_name)
+    
+    # Check if this is a firewall config
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
+    
     addresses = parser.get_device_group_addresses(group_name)
     
     if not addresses and not parser.get_device_group_summaries():
@@ -1479,6 +1502,14 @@ async def get_device_group_address_groups(
 ):
     """Get address groups for a specific device group with pagination"""
     parser = get_parser(config_name)
+    
+    # Check if this is a firewall config
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
+    
     groups = parser.get_device_group_address_groups(group_name)
     
     # Apply legacy filters
@@ -1510,6 +1541,14 @@ async def get_device_group_services(
 ):
     """Get services for a specific device group with pagination"""
     parser = get_parser(config_name)
+    
+    # Check if this is a firewall config
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
+    
     services = parser.get_device_group_services(group_name)
     
     # Apply legacy filters
@@ -1541,6 +1580,14 @@ async def get_device_group_service_groups(
 ):
     """Get service groups for a specific device group with pagination"""
     parser = get_parser(config_name)
+    
+    # Check if this is a firewall config
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
+    
     groups = parser.get_device_group_service_groups(group_name)
     
     # Apply legacy filters
@@ -1572,6 +1619,14 @@ async def get_device_group_rules(
 ):
     """Get security rules for a specific device group with pagination"""
     parser = get_parser(config_name)
+    
+    # Check if this is a firewall config
+    if parser.is_firewall:
+        raise HTTPException(
+            status_code=404,
+            detail="Device groups are not available in firewall configurations. Use /vsys endpoints instead."
+        )
+    
     rules = parser.get_device_group_security_rules(group_name, rulebase)
     
     if not rules:
@@ -1649,21 +1704,32 @@ async def get_all_security_policies(
     """
     parser = get_parser(config_name)
     
-    # Get all device groups
-    device_groups = parser.get_device_group_summaries()
-    
     all_rules = []
     
-    # Fetch security rules from each device group
-    for dg in device_groups:
-        rules = parser.get_device_group_security_rules(dg.name, "all")
-        for index, rule in enumerate(rules):
+    if parser.is_panorama:
+        # Get all device groups for Panorama configs
+        device_groups = parser.get_device_group_summaries()
+        
+        # Fetch security rules from each device group
+        for dg in device_groups:
+            rules = parser.get_device_group_security_rules(dg.name, "all")
+            for index, rule in enumerate(rules):
+                # Add metadata to each rule
+                rule.device_group = dg.name
+                rule.rule_type = 'Device Group' if rule.parent_device_group else 'Shared'
+                rule.order = index + 1
+                rule.rulebase_location = f"{dg.name} #{index + 1}"
+                all_rules.append(rule)
+    
+    elif parser.is_firewall:
+        # Get all rules from firewall vsys
+        all_rules = parser.get_all_security_rules()
+        for index, rule in enumerate(all_rules):
             # Add metadata to each rule
-            rule.device_group = dg.name
-            rule.rule_type = 'Device Group' if rule.parent_device_group else 'Shared'
+            vsys_name = rule.parent_vsys or "vsys1"
+            rule.rule_type = 'VSYS'
             rule.order = index + 1
-            rule.rulebase_location = f"{dg.name} #{index + 1}"
-            all_rules.append(rule)
+            rule.rulebase_location = f"{vsys_name} #{index + 1}"
     
     # Apply legacy filters for backwards compatibility
     if name:
@@ -1773,6 +1839,136 @@ async def get_template_stack(
         if stack.name == stack_name:
             return stack
     raise HTTPException(status_code=404, detail=f"Template stack '{stack_name}' not found")
+
+# Virtual System (Firewall) Endpoints
+@app.get("/api/v1/configs/{config_name}/vsys",
+         response_model=PaginatedResponse,
+         tags=["Virtual Systems"],
+         summary="Get all virtual systems",
+         description="Retrieve all virtual systems (vsys) for firewall configurations")
+async def get_vsys_list(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
+):
+    """Get all virtual systems for firewall configurations"""
+    parser = get_parser(config_name)
+    
+    # Check if this is a Panorama config
+    if parser.is_panorama:
+        raise HTTPException(
+            status_code=404,
+            detail="Virtual systems are not available in Panorama configurations. Use /device-groups endpoints instead."
+        )
+    
+    vsys_list = parser.get_vsys_list()
+    
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(vsys_list, pagination)
+
+@app.get("/api/v1/configs/{config_name}/vsys/{vsys_name}/addresses",
+         response_model=PaginatedResponse,
+         tags=["Virtual Systems"],
+         summary="Get addresses for specific vsys",
+         description="Retrieve all address objects for a specific vsys in firewall configurations")
+async def get_vsys_addresses(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    vsys_name: str = Path(..., description="Virtual system name (e.g., vsys1)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
+):
+    """Get addresses for a specific vsys in firewall configurations"""
+    parser = get_parser(config_name)
+    
+    # Check if this is a Panorama config
+    if parser.is_panorama:
+        raise HTTPException(
+            status_code=404,
+            detail="Virtual systems are not available in Panorama configurations. Use /device-groups endpoints instead."
+        )
+    
+    addresses = parser.get_vsys_addresses(vsys_name)
+    
+    if not addresses:
+        # Check if vsys exists
+        vsys_list = parser.get_vsys_list()
+        if not any(v['name'] == vsys_name for v in vsys_list):
+            raise HTTPException(status_code=404, detail=f"Virtual system '{vsys_name}' not found")
+    
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(addresses, pagination)
+
+@app.get("/api/v1/configs/{config_name}/vsys/{vsys_name}/services",
+         response_model=PaginatedResponse,
+         tags=["Virtual Systems"],
+         summary="Get services for specific vsys",
+         description="Retrieve all service objects for a specific vsys in firewall configurations")
+async def get_vsys_services(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    vsys_name: str = Path(..., description="Virtual system name (e.g., vsys1)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
+):
+    """Get services for a specific vsys in firewall configurations"""
+    parser = get_parser(config_name)
+    
+    # Check if this is a Panorama config
+    if parser.is_panorama:
+        raise HTTPException(
+            status_code=404,
+            detail="Virtual systems are not available in Panorama configurations. Use /device-groups endpoints instead."
+        )
+    
+    services = parser.get_vsys_services(vsys_name)
+    
+    if not services:
+        # Check if vsys exists
+        vsys_list = parser.get_vsys_list()
+        if not any(v['name'] == vsys_name for v in vsys_list):
+            raise HTTPException(status_code=404, detail=f"Virtual system '{vsys_name}' not found")
+    
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(services, pagination)
+
+@app.get("/api/v1/configs/{config_name}/vsys/{vsys_name}/rules",
+         response_model=PaginatedResponse,
+         tags=["Virtual Systems"],
+         summary="Get security rules for specific vsys",
+         description="Retrieve all security rules for a specific vsys in firewall configurations")
+async def get_vsys_rules(
+    config_name: str = Path(..., description="Configuration name (without .xml extension)"),
+    vsys_name: str = Path(..., description="Virtual system name (e.g., vsys1)"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(500, ge=1, le=10000, description="Number of items per page"),
+    disable_paging: bool = Query(False, description="Return all results without pagination")
+):
+    """Get security rules for a specific vsys in firewall configurations"""
+    parser = get_parser(config_name)
+    
+    # Check if this is a Panorama config
+    if parser.is_panorama:
+        raise HTTPException(
+            status_code=404,
+            detail="Virtual systems are not available in Panorama configurations. Use /device-groups endpoints instead."
+        )
+    
+    rules = parser.get_vsys_security_rules(vsys_name)
+    
+    if not rules:
+        # Check if vsys exists
+        vsys_list = parser.get_vsys_list()
+        if not any(v['name'] == vsys_name for v in vsys_list):
+            raise HTTPException(status_code=404, detail=f"Virtual system '{vsys_name}' not found")
+    
+    # Apply pagination
+    pagination = PaginationParams(page=page, page_size=page_size, disable_paging=disable_paging)
+    return paginate_results(rules, pagination)
 
 # Logging Endpoints
 @app.get("/api/v1/configs/{config_name}/log-profiles",

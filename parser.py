@@ -960,3 +960,166 @@ class PanoramaXMLParser:
             schedules.append(schedule)
         
         return schedules
+    
+    # Firewall-specific methods
+    def get_vsys_list(self) -> List[Dict[str, Any]]:
+        """Get list of virtual systems (vsys) for firewall configs"""
+        vsys_list = []
+        if not self.is_firewall:
+            return vsys_list
+        
+        vsys_elem = self.root.find(".//devices/entry/vsys")
+        if vsys_elem is None:
+            return vsys_list
+        
+        for entry in vsys_elem.findall("entry"):
+            name = entry.get("name")
+            if not name:
+                continue
+            
+            # Count objects in vsys
+            address_elem = entry.find("address")
+            address_count = len(address_elem.findall("entry")) if address_elem is not None else 0
+            
+            service_elem = entry.find("service")
+            service_count = len(service_elem.findall("entry")) if service_elem is not None else 0
+            
+            # Count security rules
+            rules_count = 0
+            rulebase = entry.find("rulebase")
+            if rulebase is not None:
+                security_rules = rulebase.find("security/rules")
+                if security_rules is not None:
+                    rules_count = len(security_rules.findall("entry"))
+            
+            vsys_info = {
+                "name": name,
+                "display_name": self._get_text(entry.find("display-name")),
+                "address_count": address_count,
+                "service_count": service_count,
+                "security_rules_count": rules_count
+            }
+            vsys_list.append(vsys_info)
+        
+        return vsys_list
+    
+    def get_vsys_addresses(self, vsys_name: str) -> List[AddressObject]:
+        """Get addresses for a specific vsys in firewall configs"""
+        if not self.is_firewall:
+            return []
+        
+        vsys_elem = self.root.find(f".//devices/entry/vsys/entry[@name='{vsys_name}']")
+        if vsys_elem is None:
+            return []
+        
+        address_elem = vsys_elem.find("address")
+        return self._parse_addresses_from_element(address_elem)
+    
+    def get_vsys_services(self, vsys_name: str) -> List[ServiceObject]:
+        """Get services for a specific vsys in firewall configs"""
+        if not self.is_firewall:
+            return []
+        
+        vsys_elem = self.root.find(f".//devices/entry/vsys/entry[@name='{vsys_name}']")
+        if vsys_elem is None:
+            return []
+        
+        services = []
+        service_elem = vsys_elem.find("service")
+        if service_elem is None:
+            return services
+        
+        for entry in service_elem.findall("entry"):
+            name = entry.get("name")
+            if not name:
+                continue
+            
+            protocol_elem = entry.find("protocol")
+            protocol_dict = {}
+            
+            if protocol_elem is not None:
+                tcp_elem = protocol_elem.find("tcp")
+                udp_elem = protocol_elem.find("udp")
+                
+                if tcp_elem is not None:
+                    protocol_dict["tcp"] = {
+                        "port": self._get_text(tcp_elem.find("port")),
+                        "override": self._get_text(tcp_elem.find("override/no")) is not None
+                    }
+                
+                if udp_elem is not None:
+                    protocol_dict["udp"] = {
+                        "port": self._get_text(udp_elem.find("port")),
+                        "override": self._get_text(udp_elem.find("override/no")) is not None
+                    }
+            
+            service_dict = {
+                "name": name,
+                "protocol": protocol_dict,
+                "description": self._get_text(entry.find("description")),
+                "tag": self._get_list_from_members(entry.find("tag"))
+            }
+            
+            # Add location information
+            service_dict = self._add_location_info(service_dict, entry)
+            
+            service = ServiceObject(**service_dict)
+            services.append(service)
+        
+        return services
+    
+    def get_vsys_security_rules(self, vsys_name: str) -> List[SecurityRule]:
+        """Get security rules for a specific vsys in firewall configs"""
+        if not self.is_firewall:
+            return []
+        
+        vsys_elem = self.root.find(f".//devices/entry/vsys/entry[@name='{vsys_name}']")
+        if vsys_elem is None:
+            return []
+        
+        rules = []
+        rulebase = vsys_elem.find("rulebase")
+        if rulebase is not None:
+            security_rules = rulebase.find("security/rules")
+            if security_rules is not None:
+                rules = self._parse_security_rules(security_rules)
+        
+        return rules
+    
+    def get_all_security_rules(self) -> List[SecurityRule]:
+        """Get all security rules from either Panorama device groups or firewall vsys"""
+        rules = []
+        
+        if self.is_panorama:
+            # Get rules from all device groups
+            devices_entry = self.root.find("./devices/entry")
+            if devices_entry is not None:
+                dg_element = devices_entry.find("device-group")
+                if dg_element is not None:
+                    for dg in dg_element.findall("entry"):
+                        dg_name = dg.get("name")
+                        # Get pre-rulebase rules
+                        pre_rulebase = dg.find("pre-rulebase")
+                        if pre_rulebase is not None:
+                            security_rules = pre_rulebase.find("security/rules")
+                            if security_rules is not None:
+                                rules.extend(self._parse_security_rules(security_rules))
+                        # Get post-rulebase rules
+                        post_rulebase = dg.find("post-rulebase")
+                        if post_rulebase is not None:
+                            security_rules = post_rulebase.find("security/rules")
+                            if security_rules is not None:
+                                rules.extend(self._parse_security_rules(security_rules))
+        
+        elif self.is_firewall:
+            # Get rules from all vsys
+            vsys_elem = self.root.find(".//devices/entry/vsys")
+            if vsys_elem is not None:
+                for entry in vsys_elem.findall("entry"):
+                    rulebase = entry.find("rulebase")
+                    if rulebase is not None:
+                        security_rules = rulebase.find("security/rules")
+                        if security_rules is not None:
+                            rules.extend(self._parse_security_rules(security_rules))
+        
+        return rules
