@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useTransition } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/data-table'
@@ -124,7 +124,6 @@ export function SecurityPoliciesTable() {
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [displayData, setDisplayData] = useState<SecurityPolicy[]>([])
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [isPending, startTransition] = useTransition()
   
   // Use debounced filters
   const {
@@ -156,19 +155,17 @@ export function SecurityPoliciesTable() {
       )
     },
     enabled: !!selectedConfig?.name,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
   })
 
-  // Update display data with transition
+  // Update display data
   useEffect(() => {
     if (data?.items && !isLoading) {
       setIsTransitioning(true)
-      startTransition(() => {
-        setDisplayData(data.items)
-        setIsTransitioning(false)
-        setIsInitialLoad(false)
-      })
+      setDisplayData(data.items)
+      setIsTransitioning(false)
+      setIsInitialLoad(false)
     }
   }, [data?.items, isLoading])
 
@@ -186,7 +183,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Order" 
+          title="Order"
+          field="order" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -201,7 +199,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Rule Name" 
+          title="Rule Name"
+          field="name" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -219,7 +218,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Type" 
+          title="Type"
+          field="rule_type" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -234,7 +234,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Source Zones" 
+          title="Source Zones"
+          field="from" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -247,7 +248,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Source" 
+          title="Source"
+          field="source" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -260,7 +262,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Dest Zones" 
+          title="Dest Zones"
+          field="to" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -273,7 +276,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Destination" 
+          title="Destination"
+          field="destination" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -286,7 +290,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Applications" 
+          title="Applications"
+          field="application" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -299,7 +304,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Services" 
+          title="Services"
+          field="service" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -312,7 +318,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Action" 
+          title="Action"
+          field="action" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -325,7 +332,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Logging" 
+          title="Logging"
+          field="log_setting" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -344,7 +352,8 @@ export function SecurityPoliciesTable() {
       header: ({ column }) => (
         <FilterableColumnHeader 
           column={column} 
-          title="Description" 
+          title="Description"
+          field="description" 
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
