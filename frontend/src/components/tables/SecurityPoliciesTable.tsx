@@ -12,7 +12,6 @@ import {
   Eye, 
   MoreHorizontal, 
   Loader2, 
-  Shield, 
   CheckCircle, 
   XCircle,
   AlertTriangle,
@@ -206,10 +205,7 @@ export function SecurityPoliciesTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-gray-400" />
-          <span className="font-medium text-xs">{row.original.name}</span>
-        </div>
+        <span className="font-medium text-xs">{row.original.name}</span>
       ),
       size: 200,
     },
