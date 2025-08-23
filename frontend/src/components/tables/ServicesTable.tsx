@@ -77,7 +77,7 @@ export function ServicesTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
+        <div className="font-medium text-xs">{row.getValue('name')}</div>
       ),
     },
     {
@@ -213,7 +213,7 @@ export function ServicesTable() {
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Services</h2>
+          <h2 className="text-lg font-bold tracking-tight">Services</h2>
           <p className="text-muted-foreground">
             Manage network services and port configurations
           </p>

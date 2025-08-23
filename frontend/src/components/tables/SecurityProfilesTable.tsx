@@ -28,7 +28,7 @@ export function SecurityProfilesTable({ type }: SecurityProfilesTableProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">{getTitle()}</h2>
+        <h2 className="text-lg font-bold tracking-tight">{getTitle()}</h2>
         <p className="text-muted-foreground">
           {getDescription()}
         </p>

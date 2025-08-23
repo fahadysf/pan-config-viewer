@@ -208,7 +208,7 @@ export function SecurityPoliciesTable() {
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-gray-400" />
-          <span className="font-medium">{row.original.name}</span>
+          <span className="font-medium text-xs">{row.original.name}</span>
         </div>
       ),
       size: 200,
@@ -420,7 +420,7 @@ export function SecurityPoliciesTable() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Security Policies</h2>
+          <h2 className="text-lg font-bold tracking-tight">Security Policies</h2>
           <p className="text-muted-foreground">
             Manage firewall security rules and policies
           </p>

@@ -77,7 +77,7 @@ export function AddressGroupsTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
+        <div className="font-medium text-xs">{row.getValue('name')}</div>
       ),
     },
     {
@@ -282,7 +282,7 @@ export function AddressGroupsTable() {
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Address Groups</h2>
+          <h2 className="text-lg font-bold tracking-tight">Address Groups</h2>
           <p className="text-muted-foreground">
             Manage groups of network addresses
           </p>

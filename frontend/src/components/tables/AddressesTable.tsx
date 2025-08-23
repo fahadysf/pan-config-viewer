@@ -192,7 +192,7 @@ export function AddressesTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
+        <div className="font-medium text-xs">{row.getValue('name')}</div>
       ),
     },
     {
@@ -327,7 +327,7 @@ export function AddressesTable() {
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Addresses</h2>
+          <h2 className="text-lg font-bold tracking-tight">Addresses</h2>
           <p className="text-muted-foreground">
             Manage network addresses and IP configurations
           </p>
