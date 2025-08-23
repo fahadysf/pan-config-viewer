@@ -3,6 +3,10 @@
 Comprehensive test suite for all API endpoints
 This test suite uses HTTP requests to test the API running in Docker container
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import sys
 import traceback

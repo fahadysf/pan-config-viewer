@@ -4,6 +4,10 @@ Comprehensive test suite for device group detection functionality.
 Tests various edge cases and validates proper parsing of device groups.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 import os
 from lxml import etree

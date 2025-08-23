@@ -4,6 +4,10 @@ Comprehensive test suite for device group detection in Panorama XML parser and A
 Tests the fix for device group detection issue with config-files/16-7-Panorama-Core-688.xml
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import os
 import sys
 import json

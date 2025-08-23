@@ -3,6 +3,10 @@ Performance tests for integrated pagination and filtering.
 Tests system performance with large datasets and complex operations.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 import time
 import statistics

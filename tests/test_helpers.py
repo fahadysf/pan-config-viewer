@@ -1,6 +1,10 @@
 """
 Test helper utilities for graceful error handling
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import functools
 import traceback
 import pytest

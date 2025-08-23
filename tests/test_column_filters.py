@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Test script to verify column filtering is working correctly."""
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import json
 import time

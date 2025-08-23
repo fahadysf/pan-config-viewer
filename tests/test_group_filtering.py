@@ -20,7 +20,7 @@ from typing import List, Dict, Any, Optional
 from unittest.mock import Mock, patch
 
 # Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import AddressGroup, ServiceGroup, DeviceGroupSummary
 from filtering import (

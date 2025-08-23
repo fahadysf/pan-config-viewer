@@ -3,6 +3,10 @@
 Manual pagination testing script for interactive verification
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import json
 import sys

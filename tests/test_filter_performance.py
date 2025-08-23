@@ -4,6 +4,10 @@ Performance testing script for filter implementation.
 Tests the filtering system with large datasets to ensure optimization.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 import random
 import string

@@ -2,6 +2,10 @@
 """
 Test script to verify that configs are fully cached before being available
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import time
 import sys

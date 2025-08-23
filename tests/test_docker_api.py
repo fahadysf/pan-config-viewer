@@ -2,6 +2,10 @@
 Tests that work with the Docker container API
 These tests expect the Docker container to be running on http://localhost:8000
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 import requests
 

@@ -26,6 +26,10 @@ The tests verify that:
 5. The filter integrates properly with the broader filtering system
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 import time
 from typing import List, Dict, Any, Optional
