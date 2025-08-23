@@ -77,7 +77,7 @@ export function DeviceGroupsTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
+        <div className="font-medium text-xs">{row.getValue('name')}</div>
       ),
     },
     {
@@ -148,10 +148,10 @@ export function DeviceGroupsTable() {
         return (
           <div className="text-sm space-y-1">
             <div>
-              <span className="font-medium">Addresses:</span> {addressCount}
+              <span className="font-medium text-xs">Addresses:</span> {addressCount}
             </div>
             <div>
-              <span className="font-medium">Services:</span> {serviceCount}
+              <span className="font-medium text-xs">Services:</span> {serviceCount}
             </div>
           </div>
         )
@@ -168,10 +168,10 @@ export function DeviceGroupsTable() {
         return (
           <div className="text-sm space-y-1">
             <div>
-              <span className="font-medium">Pre:</span> {preRules}
+              <span className="font-medium text-xs">Pre:</span> {preRules}
             </div>
             <div>
-              <span className="font-medium">Post:</span> {postRules}
+              <span className="font-medium text-xs">Post:</span> {postRules}
             </div>
             <div className="text-xs text-gray-500">Total: {totalRules}</div>
           </div>
@@ -189,10 +189,10 @@ export function DeviceGroupsTable() {
         return (
           <div className="text-sm space-y-1">
             <div>
-              <span className="font-medium">Pre:</span> {preNat}
+              <span className="font-medium text-xs">Pre:</span> {preNat}
             </div>
             <div>
-              <span className="font-medium">Post:</span> {postNat}
+              <span className="font-medium text-xs">Post:</span> {postNat}
             </div>
             <div className="text-xs text-gray-500">Total: {totalNat}</div>
           </div>
@@ -270,7 +270,7 @@ export function DeviceGroupsTable() {
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Device Groups</h2>
+          <h2 className="text-lg font-bold tracking-tight">Device Groups</h2>
           <p className="text-muted-foreground">
             Manage device group configurations and policies
           </p>

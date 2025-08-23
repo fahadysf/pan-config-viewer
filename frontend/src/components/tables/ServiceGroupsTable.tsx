@@ -77,7 +77,7 @@ export function ServiceGroupsTable() {
         />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
+        <div className="font-medium text-xs">{row.getValue('name')}</div>
       ),
     },
     {
@@ -266,7 +266,7 @@ export function ServiceGroupsTable() {
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Service Groups</h2>
+          <h2 className="text-lg font-bold tracking-tight">Service Groups</h2>
           <p className="text-muted-foreground">
             Manage grouped network services and configurations
           </p>

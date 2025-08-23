@@ -67,11 +67,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 <button
                   onClick={() => setActiveSection(item.id)}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors",
+                    "w-full flex items-center transition-colors",
+                    isOpen ? "justify-between px-3 py-2 rounded-lg" : "justify-center p-2 mx-2 rounded-lg",
                     isActive ? "bg-blue-600 text-white" : "hover:bg-gray-800 text-gray-300"
                   )}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={cn("flex items-center", isOpen && "gap-3")}>
                     <Icon size={20} />
                     {isOpen && <span>{item.label}</span>}
                   </div>
@@ -89,9 +90,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           <li>
             <button
               onClick={() => setShowSecurityProfiles(!showSecurityProfiles)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
+              className={cn(
+                "w-full flex items-center hover:bg-gray-800 text-gray-300 transition-colors",
+                isOpen ? "justify-between px-3 py-2 rounded-lg" : "justify-center p-2 mx-2 rounded-lg"
+              )}
             >
-              <div className="flex items-center gap-3">
+              <div className={cn("flex items-center", isOpen && "gap-3")}>
                 <Shield size={20} />
                 {isOpen && <span>Security Profiles</span>}
               </div>
