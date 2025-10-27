@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 15px; /* Slightly reduced base font size from 16px */
+  }
+  
+  body {
+    @apply text-sm; /* Apply text-sm globally for better readability */
+  }
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;

@@ -270,7 +270,7 @@ export function DeviceGroupsTable() {
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Device Groups</h2>
+          <h2 className="text-lg font-bold tracking-tight">Device Groups</h2>
           <p className="text-muted-foreground">
             Manage device group configurations and policies
           </p>
