@@ -59,7 +59,19 @@ class PanoramaXMLParser:
     def _get_text(self, element, default: str = "") -> str:
         """Safely get text from an XML element"""
         return element.text if element is not None and element.text else default
-    
+
+    def _is_disabled(self, element) -> bool:
+        """Determine whether a rule is disabled from its <disabled> element.
+
+        A rule is disabled only when the <disabled> element exists and its
+        stripped text equals "yes". Missing element, empty element, "no", or
+        any other value is treated as enabled.
+        """
+        if element is None:
+            return False
+        text = self._get_text(element).strip()
+        return text == "yes"
+
     def _get_list_from_members(self, element) -> List[str]:
         """Extract list from member elements"""
         if element is None:
@@ -601,7 +613,7 @@ class PanoramaXMLParser:
                 "log_setting": self._get_text(rule_entry.find("log-setting")),
                 "log_start": rule_entry.find("log-start") is not None and self._get_text(rule_entry.find("log-start")) == "yes",
                 "log_end": rule_entry.find("log-end") is not None and self._get_text(rule_entry.find("log-end")) == "yes",
-                "disabled": rule_entry.find("disabled") is not None and self._get_text(rule_entry.find("disabled")) == "yes",
+                "disabled": self._is_disabled(rule_entry.find("disabled")),
                 "description": self._get_text(rule_entry.find("description")),
                 "tag": self._get_list_from_members(rule_entry.find("tag"))
             }
