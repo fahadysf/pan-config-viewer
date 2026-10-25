@@ -48,6 +48,28 @@ class TestAddressObject:
         assert address.fqdn == "example.com"
         assert address.ip_netmask is None
         assert address.ip_range is None
+
+    @pytest.mark.parametrize("blank_value", [None, "", " ", "\t\n"])
+    @pytest.mark.parametrize(
+        "field,value,expected_type",
+        [
+            ("ip-netmask", "10.1.1.100/32", AddressType.IP_NETMASK),
+            ("ip-range", "10.1.1.1-10.1.1.100", AddressType.IP_RANGE),
+            ("fqdn", "example.com", AddressType.FQDN),
+        ],
+    )
+    def test_blank_fields_do_not_override_populated_value(
+        self, blank_value, field, value, expected_type
+    ):
+        fields = dict.fromkeys(("ip-netmask", "ip-range", "fqdn"), blank_value)
+        fields[field] = value
+
+        address = AddressObject(name="test-blank-fields", **fields)
+
+        assert address.type == expected_type
+        data = address.model_dump(by_alias=True)
+        for address_field in fields:
+            assert data[address_field] == (value if address_field == field else None)
     
     def test_multiple_values_prioritize_ip_netmask(self):
         """Test that when multiple values are provided, ip-netmask takes precedence"""

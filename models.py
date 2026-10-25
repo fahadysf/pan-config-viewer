@@ -102,24 +102,18 @@ class AddressObject(ConfigLocation):
         if has_ip_netmask:
             self.type = AddressType.IP_NETMASK
             # Set other fields to None for cleanliness
-            if not has_ip_range:
-                self.ip_range = None
-            if not has_fqdn:
-                self.fqdn = None
+            self.ip_range = None
+            self.fqdn = None
         elif has_ip_range:
             self.type = AddressType.IP_RANGE
             # Set other fields to None for cleanliness
-            if not has_ip_netmask:
-                self.ip_netmask = None
-            if not has_fqdn:
-                self.fqdn = None
+            self.ip_netmask = None
+            self.fqdn = None
         elif has_fqdn:
             self.type = AddressType.FQDN
             # Set other fields to None for cleanliness
-            if not has_ip_netmask:
-                self.ip_netmask = None
-            if not has_ip_range:
-                self.ip_range = None
+            self.ip_netmask = None
+            self.ip_range = None
         else:
             # If type is explicitly specified but no corresponding value, 
             # keep it as is but clean up unused fields
